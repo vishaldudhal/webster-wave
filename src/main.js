@@ -120,9 +120,9 @@ function renderShell() {
     <div class="app-shell">
       <header class="app-header">
         <div>
-          <div class="eyebrow">Business development · Marketing</div>
-          <h1>30-Day Growth Planner</h1>
-          <p class="subtitle">One calendar. Every action. A little progress, every day.</p>
+          <div class="eyebrow">Webster Actions · Visibility · Execution</div>
+          <h1>Webster WAVE</h1>
+          <p class="subtitle">One calendar. Every growth action. A little progress, every day.</p>
         </div>
         <div class="header-actions">
           <button class="button reminder-preview" id="previewReminder">◷ &nbsp; Preview reminder</button>

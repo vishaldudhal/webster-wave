@@ -1,9 +1,11 @@
-# 30-Day Growth Planner
+# Webster WAVE
 
-A focused, browser-based calendar for planning and tracking business development and marketing actions over a rolling 30-day period.
+**Webster Actions, Visibility & Execution**
 
-- Live: https://30-day-growth-planner.vercel.app
-- Repository: https://github.com/vishaldudhal/30-day-growth-planner
+A focused, browser-based calendar for planning and tracking Webster's business development and marketing actions over a rolling 30-day period.
+
+- Live: https://webster-wave.vercel.app
+- Repository: https://github.com/vishaldudhal/webster-wave
 
 ## Included
 
@@ -39,4 +41,4 @@ The deployable output is generated in `dist/`.
 
 ## Data model
 
-The planner stores activities in `localStorage` under `growth30.planner.v1`. Data stays in the current browser and device. Clearing browser storage removes the plan.
+The planner stores activities in `localStorage` under the original `growth30.planner.v1` key to preserve existing browser data. Data stays in the current browser and device. Clearing browser storage removes the plan.
