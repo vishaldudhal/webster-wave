@@ -2,6 +2,9 @@
 
 A focused, browser-based calendar for planning and tracking business development and marketing actions over a rolling 30-day period.
 
+- Live: https://30-day-growth-planner.vercel.app
+- Repository: https://github.com/vishaldudhal/30-day-growth-planner
+
 ## Included
 
 - Rolling 30-day calendar with start-date control
