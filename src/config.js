@@ -4,6 +4,11 @@ export const DEFAULT_OWNER = "Vishal";
 export const PRIORITIES = ["High", "Medium", "Low"];
 export const STATUSES = ["Scheduled", "In progress", "Completed"];
 export const MAX_DAILY_OPEN = 6;
+export const SESSION_KEY = "webster.wave.session.v1";
+export const UI_KEY = "webster.wave.ui.v1";
+export const MARKETING_CHANNELS = ["Instagram", "Facebook", "Twitter / X", "LinkedIn", "Blogs", "YouTube"];
+export const BLOG_TYPES = ["Life at Webster", "General Blog"];
+export const PUBLISHING_STATUSES = ["Idea", "Draft", "In review", "Scheduled", "Published"];
 
 export const VERTICAL_TEMPLATES = {
   "Local Business Development": ["Shortlist the business", "Complete research", "Establish contact", "Complete visit or meeting", "Send follow-up", "Record next step"],
@@ -17,6 +22,6 @@ export const VERTICAL_TEMPLATES = {
 };
 
 export const DEFAULT_VERTICALS = Object.keys(VERTICAL_TEMPLATES);
-export const PLATFORM_SUGGESTIONS = ["LinkedIn", "Instagram", "Facebook", "Email", "Phone", "WhatsApp", "Website", "Blog", "Quora", "YouTube", "Pinterest", "In person"];
+export const PLATFORM_SUGGESTIONS = ["LinkedIn", "Instagram", "Facebook", "Twitter / X", "Life at Webster Blog", "General Blog", "YouTube", "Email", "Phone", "WhatsApp", "Website", "Quora", "Pinterest", "In person"];
 export const ACTIVITY_TYPE_SUGGESTIONS = ["Post", "Article", "Reel / Short", "Q&A", "Email", "Call", "Meeting", "Visit", "Follow-up", "Research", "Proposal", "Event"];
 export const CATEGORY_SUGGESTIONS = ["Awareness", "Engagement", "Lead generation", "Relationship", "Conversion", "Retention", "Partnership", "Networking"];

@@ -1,5 +1,5 @@
-import { DEFAULT_OWNER, DEFAULT_VERTICALS, MAX_DAILY_OPEN, PRIORITIES, STORAGE_KEY, VERTICAL_TEMPLATES } from "./config.js";
-import { dateRange, firstOfMonth, isWorkday, lastOfMonth, nextWorkday, parseDate, shiftDate, shiftMonth, today, toLocalDate, weekdayNumber } from "./dates.js";
+import { DEFAULT_OWNER, DEFAULT_VERTICALS, MARKETING_CHANNELS, MAX_DAILY_OPEN, PRIORITIES, PUBLISHING_STATUSES, STORAGE_KEY, VERTICAL_TEMPLATES } from "./config.js";
+import { dateRange, firstOfMonth, lastOfMonth, parseDate, shiftDate, shiftMonth, today, toLocalDate, weekdayNumber } from "./dates.js";
 
 export const uid = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
 export const progress = (activity) => activity.items.length ? Math.round((activity.items.filter((item) => item.done).length / activity.items.length) * 100) : activity.manualDone ? 100 : 0;
@@ -9,9 +9,13 @@ export const isFollowUpDue = (activity) => activity.followUpDate && activity.fol
 const cleanText = (value) => String(value || "").trim();
 const normalizeItem = (item) => ({ id: item?.id || uid(), label: cleanText(item?.label) || "Checklist item", done: Boolean(item?.done) });
 const normalizeAttachment = (file) => ({ id: file?.id || uid(), name: cleanText(file?.name) || "Attachment", type: cleanText(file?.type), size: Number(file?.size || 0), data: String(file?.data || "") });
+const normalizeMarketingChannel = (value) => ({ Blog: "Blogs", "Life at Webster Blog": "Blogs", "General Blog": "Blogs", Twitter: "Twitter / X", X: "Twitter / X" }[cleanText(value)] || cleanText(value));
+const normalizePublicationTarget = (target) => ({ channel: normalizeMarketingChannel(target?.channel), status: PUBLISHING_STATUSES.includes(target?.status) ? target.status : "Scheduled" });
 
 export function normalizeActivity(activity = {}) {
   const date = activity.date || today();
+  const legacyChannelName = normalizeMarketingChannel(activity.platform);
+  const legacyChannel = activity.vertical === "Marketing" && MARKETING_CHANNELS.includes(legacyChannelName) ? [{ channel: legacyChannelName, status: activity.manualDone ? "Published" : "Scheduled" }] : [];
   return {
     ...activity,
     id: activity.id || uid(),
@@ -24,6 +28,7 @@ export function normalizeActivity(activity = {}) {
     platform: cleanText(activity.platform),
     activityType: cleanText(activity.activityType),
     category: cleanText(activity.category),
+    blogType: cleanText(activity.blogType) || (activity.platform === "Life at Webster Blog" ? "Life at Webster" : activity.platform === "General Blog" ? "General Blog" : ""),
     topic: cleanText(activity.topic),
     additionalDetails: cleanText(activity.additionalDetails),
     notes: String(activity.notes || ""),
@@ -35,6 +40,7 @@ export function normalizeActivity(activity = {}) {
     manualDone: Boolean(activity.manualDone),
     items: Array.isArray(activity.items) ? activity.items.map(normalizeItem) : [],
     attachments: Array.isArray(activity.attachments) ? activity.attachments.map(normalizeAttachment) : [],
+    publicationTargets: Array.from(new Map((Array.isArray(activity.publicationTargets) ? activity.publicationTargets : legacyChannel).map(normalizePublicationTarget).filter((target) => target.channel).map((target) => [target.channel, target])).values()),
     history: Array.isArray(activity.history) ? activity.history : [],
     recurrenceId: activity.recurrenceId || "",
     occurrenceDate: activity.occurrenceDate || (activity.recurrenceId ? date : ""),
@@ -59,10 +65,10 @@ function normalizeSchedule(schedule = {}) {
 function templateFrom(activity) {
   return {
     title: activity.title, vertical: activity.vertical, owner: activity.owner, priority: activity.priority,
-    platform: activity.platform, activityType: activity.activityType, category: activity.category,
+    platform: activity.platform, activityType: activity.activityType, category: activity.category, blogType: activity.blogType,
     topic: activity.topic, additionalDetails: activity.additionalDetails, notes: activity.notes,
     resources: activity.resources, outcome: "", followUpDate: "", followUpDone: false,
-    fixed: activity.fixed, attachments: activity.attachments,
+    fixed: activity.fixed, attachments: activity.attachments, publicationTargets: activity.publicationTargets,
     checklist: activity.items.map((item) => item.label),
   };
 }
@@ -89,15 +95,18 @@ function readState() {
       const activities = stored.activities.map(normalizeActivity);
       return {
         ...stored,
-        schemaVersion: 3,
+        schemaVersion: 4,
         activities,
         recurrences: Array.isArray(stored.recurrences) ? stored.recurrences.map(normalizeSchedule) : [],
         team: Array.from(new Set([DEFAULT_OWNER, ...(stored.team || []), ...activities.map((item) => item.owner).filter(Boolean)])),
         verticals: Array.from(new Set([...DEFAULT_VERTICALS, ...(stored.verticals || []), ...activities.map((item) => item.vertical).filter(Boolean)])),
+        profile: { name: DEFAULT_OWNER, email: "", role: "Business Development", ...(stored.profile || {}) },
+        settings: { workingDays: [1, 2, 3, 4, 5], holidays: [], reminderEnabled: true, reminderTime: "10:00", ...(stored.settings || {}) },
+        templates: { ...VERTICAL_TEMPLATES, ...(stored.templates || {}) },
       };
     }
   } catch { /* Fall through to starter data. */ }
-  return { schemaVersion: 3, activities: createExamples(), recurrences: [], team: [DEFAULT_OWNER], verticals: [...DEFAULT_VERTICALS] };
+  return { schemaVersion: 4, activities: createExamples(), recurrences: [], team: [DEFAULT_OWNER], verticals: [...DEFAULT_VERTICALS], profile: { name: DEFAULT_OWNER, email: "", role: "Business Development" }, settings: { workingDays: [1, 2, 3, 4, 5], holidays: [], reminderEnabled: true, reminderTime: "10:00" }, templates: { ...VERTICAL_TEMPLATES } };
 }
 
 export const state = readState();
@@ -105,15 +114,18 @@ export function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)
 
 function normalizedState(source) {
   if (!source || typeof source !== "object" || !Array.isArray(source.activities)) throw new Error("This file does not contain a valid WAVE plan.");
-  if (Number(source.schemaVersion || 1) > 3) throw new Error("This backup was created by a newer version of WAVE.");
+  if (Number(source.schemaVersion || 1) > 4) throw new Error("This backup was created by a newer version of WAVE.");
   if (source.recurrences != null && !Array.isArray(source.recurrences)) throw new Error("The recurring schedule data is invalid.");
   const activities = source.activities.map(normalizeActivity);
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     activities,
     recurrences: (source.recurrences || []).map(normalizeSchedule),
     team: Array.from(new Set([DEFAULT_OWNER, ...(Array.isArray(source.team) ? source.team : []), ...activities.map((item) => item.owner).filter(Boolean)])),
     verticals: Array.from(new Set([...DEFAULT_VERTICALS, ...(Array.isArray(source.verticals) ? source.verticals : []), ...activities.map((item) => item.vertical).filter(Boolean)])),
+    profile: { name: DEFAULT_OWNER, email: "", role: "Business Development", ...(source.profile || {}) },
+    settings: { workingDays: [1, 2, 3, 4, 5], holidays: [], reminderEnabled: true, reminderTime: "10:00", ...(source.settings || {}) },
+    templates: { ...VERTICAL_TEMPLATES, ...(source.templates || {}) },
   };
 }
 
@@ -122,7 +134,7 @@ export function createBackup() {
     format: "webster-wave-backup",
     backupVersion: 1,
     exportedAt: new Date().toISOString(),
-    appVersion: "0.4.0",
+    appVersion: "1.0.0",
     data: JSON.parse(JSON.stringify(state)),
   };
 }
@@ -183,11 +195,13 @@ export function syncRecurrences(throughDate = lastOfMonth(shiftMonth(firstOfMont
 }
 
 function nextAvailableWorkingDay(activity) {
-  let candidate = isWorkday(today()) ? today() : nextWorkday(today());
+  const allowed = (value) => state.settings.workingDays.includes(weekdayNumber(value)) && !state.settings.holidays.includes(value);
+  const nextAllowed = (value) => { let candidate = shiftDate(value, 1); while (!allowed(candidate)) candidate = shiftDate(candidate, 1); return candidate; };
+  let candidate = allowed(today()) ? today() : nextAllowed(today());
   while (true) {
     const load = state.activities.filter((item) => item.id !== activity.id && item.date === candidate && progress(item) < 100).length;
     if (load < MAX_DAILY_OPEN) return candidate;
-    candidate = nextWorkday(candidate);
+    candidate = nextAllowed(candidate);
   }
 }
 

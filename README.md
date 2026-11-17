@@ -1,8 +1,8 @@
-# Webster WAVE
+# Webster WAVE 1.0
 
 **Webster Actions, Visibility & Execution**
 
-A connected business development command centre for recurring planning, weekly execution, and progress tracking across Webster's eight growth verticals.
+A premium, connected business development and marketing command centre for planning, publishing, recurring execution, and progress tracking across Webster's eight growth verticals.
 
 - Live: https://webster-wave.vercel.app
 - Repository: https://github.com/vishaldudhal/webster-wave
@@ -10,7 +10,10 @@ A connected business development command centre for recurring planning, weekly e
 ## Included
 
 - Daily command overview for today's work, pending items, follow-ups, and completions
+- Branded local workspace login, collapsible navigation, notifications, and profile controls
+- Dedicated Overview, Planner, Activities, and Settings modules backed by one shared data model
 - Synchronized monthly calendar and Monday-to-Sunday spreadsheet planner
+- Channel-by-day weekly marketing board with inline titles and independent publishing status per channel
 - Weekly planning fields for platform, activity type, category, topic, assignment, and details
 - Weekly, monthly, and weekday-based recurring schedules with fresh occurrence progress
 - Individual-occurrence and future-series editing without duplication
@@ -18,8 +21,8 @@ A connected business development command centre for recurring planning, weekly e
 - Central assignments plus vertical, status, and owner filtering without team logins
 - Eight business development verticals with customizable checklist templates
 - Capacity-aware working-day carry-forward with fixed-date and completed-work protection
-- Follow-up tracking and priority-aware 10:00 AM morning briefing
-- Backward-compatible version 3 migration of existing activity data
+- Follow-up tracking and a configurable, priority-aware daily briefing
+- Backward-compatible version 4 migration of existing activity data
 - Local browser storage with no account or backend
 - Complete JSON backup and validated restore, including schedules and local attachments
 - Responsive desktop and mobile layouts
@@ -51,4 +54,4 @@ The deployable output is generated in `dist/`.
 
 ## Data model
 
-WAVE stores activities and recurring schedules in `localStorage` under the original `growth30.planner.v1` key. The version 3 schema is applied automatically without replacing old activities. Attachments are stored as browser-local data and limited to 1.5 MB per file. Use **Backup & restore** to download a complete portable JSON copy before clearing browser storage or moving to another device.
+WAVE stores activities, publishing targets, workspace settings, and recurring schedules in `localStorage` under the original `growth30.planner.v1` key. The version 4 schema is applied automatically without replacing old activities. Attachments are stored as browser-local data and limited to 1.5 MB per file. Use **Backup & restore** to download a complete portable JSON copy before clearing browser storage or moving to another device.
