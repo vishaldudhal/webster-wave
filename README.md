@@ -2,7 +2,7 @@
 
 **Webster Actions, Visibility & Execution**
 
-A calendar-focused business development command centre for planning, assigning, and executing Webster's growth activity over a rolling 30-day period.
+A calendar-focused business development command centre for planning, assigning, and executing Webster's growth activity month by month.
 
 - Live: https://webster-wave.vercel.app
 - Repository: https://github.com/vishaldudhal/webster-wave
@@ -10,10 +10,10 @@ A calendar-focused business development command centre for planning, assigning, 
 ## Included
 
 - Daily command overview for today's work, pending items, follow-ups, and completions
-- Rolling 30-day calendar with activity counts, priority signals, progress, and carry-forward states
+- Full monthly calendar beginning on the 1st, with activity counts, priority signals, progress, and carry-forward states
 - Detailed activity workspace with dynamic checklists, notes, resources, progress, and history
 - Central owner assignments and owner filtering without team logins
-- Eight customizable business development checklist templates
+- Eight ready-made business development checklist templates plus custom verticals
 - Automatic working-day carry-forward with fixed-date support
 - Follow-up tracking and priority-aware 10:00 AM morning briefing
 - Backward-compatible migration of existing activity data
