@@ -155,13 +155,71 @@ function showActivityDetail(id) {
 function showActivityForm(id = null) {
   const activity = id ? state.activities.find((item) => item.id === id) : null; const editing = Boolean(activity);
   let draftItems = activity ? activity.items.map((item) => ({ ...item })) : templates.Marketing.map((label) => ({ id: uid(), label, done: false }));
-  openModal(`<article class="modal form-modal" role="dialog" aria-modal="true" aria-labelledby="formTitle"><header class="modal-head"><div><div class="eyebrow">${editing ? "Edit activity" : "New activity"}</div><h2 id="formTitle">${editing ? "Update the activity" : "Plan the next action"}</h2><p class="modal-description">Set clear ownership, priority and next steps.</p></div><button class="close-button" data-close aria-label="Close">×</button></header><form class="form" id="activityForm"><label class="field span-2">Activity title<input id="activityTitle" required maxlength="120" placeholder="What needs to happen?" value="${escapeHtml(activity?.title ?? "")}" /></label><label class="field">Vertical<input id="activityVertical" list="verticalOptions" required maxlength="60" placeholder="Type or select a vertical" value="${escapeHtml(activity?.vertical ?? "Marketing")}"/><datalist id="verticalOptions">${state.verticals.map((vertical) => `<option value="${escapeHtml(vertical)}">`).join("")}</datalist><small class="field-help">Type a new name to add another vertical.</small></label><label class="field">Owner<input id="activityOwner" list="ownerOptions" required maxlength="50" placeholder="Type or select an owner" value="${escapeHtml(activity?.owner ?? DEFAULT_OWNER)}"/><datalist id="ownerOptions">${state.team.map((owner) => `<option value="${escapeHtml(owner)}">`).join("")}</datalist><small class="field-help">Type a new name to add another owner.</small></label><label class="field">Scheduled date<input id="activityDate" type="date" required value="${activity?.date ?? selectedDate}" /></label><label class="field">Priority<select id="activityPriority">${priorities.map((priority) => `<option ${activity?.priority === priority || (!activity && priority === "Medium") ? "selected" : ""}>${priority}</option>`).join("")}</select></label><label class="field">Follow-up date<input id="followUpDate" type="date" value="${activity?.followUpDate ?? ""}" /></label><label class="inline-check fixed-field"><input id="fixedDate" type="checkbox" ${activity?.fixed ? "checked" : ""} /><span><strong>Fixed date</strong><small>Never carry this activity forward</small></span></label><label class="field span-2">Notes<textarea id="activityNotes" rows="3" placeholder="Context, talking points or desired outcome">${escapeHtml(activity?.notes ?? "")}</textarea></label><label class="field span-2">Resources<textarea id="activityResources" rows="2" placeholder="Add links or references, one per line">${escapeHtml(activity?.resources ?? "")}</textarea></label><div class="span-2"><div class="section-title checklist-heading"><h3>Checklist template</h3><span id="stepCount"></span></div><div id="checklistEditor"></div><button class="new-check" id="addChecklistItem" type="button">＋ Add checklist step</button></div><div class="form-actions span-2"><button class="button" type="button" data-close>Cancel</button><button class="button primary" type="submit">${editing ? "Save changes" : "Add activity"}</button></div></form></article>`);
-  const editor = overlay.querySelector("#checklistEditor"); const verticalSelect = overlay.querySelector("#activityVertical");
+  openModal(`
+    <article class="modal form-modal" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+      <header class="modal-head">
+        <div><div class="eyebrow">${editing ? "Edit activity" : "New activity"}</div><h2 id="formTitle">${editing ? "Update the activity" : "Plan the next action"}</h2><p class="modal-description">Set clear ownership, priority and next steps.</p></div>
+        <button class="close-button" data-close aria-label="Close">×</button>
+      </header>
+      <form class="form" id="activityForm">
+        <label class="field span-2">Activity title<input id="activityTitle" required maxlength="120" placeholder="What needs to happen?" value="${escapeHtml(activity?.title ?? "")}" /></label>
+        <label class="field">Vertical
+          <select id="activityVertical" required>${state.verticals.map((vertical) => `<option value="${escapeHtml(vertical)}" ${activity?.vertical === vertical || (!activity && vertical === "Marketing") ? "selected" : ""}>${escapeHtml(vertical)}</option>`).join("")}<option value="__new__">＋ Add new vertical…</option></select>
+          <input id="newVertical" class="custom-entry hidden" maxlength="60" placeholder="Enter new vertical" />
+        </label>
+        <label class="field">Owner
+          <select id="activityOwner" required>${state.team.map((owner) => `<option value="${escapeHtml(owner)}" ${activity?.owner === owner || (!activity && owner === DEFAULT_OWNER) ? "selected" : ""}>${escapeHtml(owner)}</option>`).join("")}<option value="__new__">＋ Add new owner…</option></select>
+          <input id="newOwner" class="custom-entry hidden" maxlength="50" placeholder="Enter new owner name" />
+        </label>
+        <label class="field">Scheduled date<input id="activityDate" type="date" required value="${activity?.date ?? selectedDate}" /></label>
+        <label class="field">Priority<select id="activityPriority">${priorities.map((priority) => `<option ${activity?.priority === priority || (!activity && priority === "Medium") ? "selected" : ""}>${priority}</option>`).join("")}</select></label>
+        <label class="field">Follow-up date<input id="followUpDate" type="date" value="${activity?.followUpDate ?? ""}" /></label>
+        <label class="inline-check fixed-field"><input id="fixedDate" type="checkbox" ${activity?.fixed ? "checked" : ""} /><span><strong>Fixed date</strong><small>Never carry this activity forward</small></span></label>
+        <label class="field span-2">Notes<textarea id="activityNotes" rows="3" placeholder="Context, talking points or desired outcome">${escapeHtml(activity?.notes ?? "")}</textarea></label>
+        <label class="field span-2">Resources<textarea id="activityResources" rows="2" placeholder="Add links or references, one per line">${escapeHtml(activity?.resources ?? "")}</textarea></label>
+        <div class="span-2"><div class="section-title checklist-heading"><h3>Checklist template</h3><span id="stepCount"></span></div><div id="checklistEditor"></div><button class="new-check" id="addChecklistItem" type="button">＋ Add checklist step</button></div>
+        <div class="form-actions span-2"><button class="button" type="button" data-close>Cancel</button><button class="button primary" type="submit">${editing ? "Save changes" : "Add activity"}</button></div>
+      </form>
+    </article>`);
+  const editor = overlay.querySelector("#checklistEditor");
+  const verticalSelect = overlay.querySelector("#activityVertical");
+  const newVertical = overlay.querySelector("#newVertical");
+  const ownerSelect = overlay.querySelector("#activityOwner");
+  const newOwner = overlay.querySelector("#newOwner");
   function drawChecklistEditor() { overlay.querySelector("#stepCount").textContent = `${draftItems.length} steps`; editor.innerHTML = draftItems.map((item, index) => `<div class="check-edit"><span>${index + 1}</span><input data-check-input="${index}" aria-label="Checklist item ${index + 1}" value="${escapeHtml(item.label)}" /><button data-remove-check="${index}" type="button" aria-label="Remove checklist item">×</button></div>`).join(""); editor.querySelectorAll("[data-check-input]").forEach((input) => input.addEventListener("input", () => { draftItems[Number(input.dataset.checkInput)].label = input.value; })); editor.querySelectorAll("[data-remove-check]").forEach((button) => button.addEventListener("click", () => { draftItems.splice(Number(button.dataset.removeCheck), 1); drawChecklistEditor(); })); }
   drawChecklistEditor();
-  verticalSelect.addEventListener("change", () => { const template = templates[verticalSelect.value.trim()]; if (!template) return; if (editing && !window.confirm("Replace the current checklist with this vertical’s template?")) return; draftItems = template.map((label) => ({ id: uid(), label, done: false })); drawChecklistEditor(); });
+  verticalSelect.addEventListener("change", () => {
+    const adding = verticalSelect.value === "__new__";
+    newVertical.classList.toggle("hidden", !adding);
+    newVertical.required = adding;
+    if (adding) { newVertical.focus(); return; }
+    const template = templates[verticalSelect.value];
+    if (!template) return;
+    if (editing && !window.confirm("Replace the current checklist with this vertical’s template?")) return;
+    draftItems = template.map((label) => ({ id: uid(), label, done: false }));
+    drawChecklistEditor();
+  });
+  ownerSelect.addEventListener("change", () => {
+    const adding = ownerSelect.value === "__new__";
+    newOwner.classList.toggle("hidden", !adding);
+    newOwner.required = adding;
+    if (adding) newOwner.focus();
+  });
   overlay.querySelector("#addChecklistItem").addEventListener("click", () => { draftItems.push({ id: uid(), label: "", done: false }); drawChecklistEditor(); editor.querySelector(`[data-check-input="${draftItems.length - 1}"]`)?.focus(); });
-  overlay.querySelector("#activityForm").addEventListener("submit", (event) => { event.preventDefault(); const title = overlay.querySelector("#activityTitle").value.trim(); const date = overlay.querySelector("#activityDate").value; const owner = overlay.querySelector("#activityOwner").value.trim() || DEFAULT_OWNER; const vertical = verticalSelect.value.trim() || "Marketing"; if (!title || !date) return; const items = draftItems.filter((item) => item.label.trim()).map((item) => ({ ...item, id: item.id || uid(), label: item.label.trim() })); const payload = { title, vertical, owner, date, priority: overlay.querySelector("#activityPriority").value, followUpDate: overlay.querySelector("#followUpDate").value, fixed: overlay.querySelector("#fixedDate").checked, notes: overlay.querySelector("#activityNotes").value.trim(), resources: overlay.querySelector("#activityResources").value.trim(), items, updatedAt: new Date().toISOString() }; if (editing) Object.assign(activity, payload); else state.activities.push(normalizeActivity({ id: uid(), originalDate: date, history: [], ...payload })); if (!state.team.includes(owner)) state.team.push(owner); if (!state.verticals.includes(vertical)) state.verticals.push(vertical); selectedDate = date; periodStart = firstOfMonth(date); save(); closeModal(); render(); });
+  overlay.querySelector("#activityForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const title = overlay.querySelector("#activityTitle").value.trim();
+    const date = overlay.querySelector("#activityDate").value;
+    const owner = ownerSelect.value === "__new__" ? newOwner.value.trim() : ownerSelect.value;
+    const vertical = verticalSelect.value === "__new__" ? newVertical.value.trim() : verticalSelect.value;
+    if (!title || !date || !owner || !vertical) return;
+    const items = draftItems.filter((item) => item.label.trim()).map((item) => ({ ...item, id: item.id || uid(), label: item.label.trim() }));
+    const payload = { title, vertical, owner, date, priority: overlay.querySelector("#activityPriority").value, followUpDate: overlay.querySelector("#followUpDate").value, fixed: overlay.querySelector("#fixedDate").checked, notes: overlay.querySelector("#activityNotes").value.trim(), resources: overlay.querySelector("#activityResources").value.trim(), items, updatedAt: new Date().toISOString() };
+    if (editing) Object.assign(activity, payload); else state.activities.push(normalizeActivity({ id: uid(), originalDate: date, history: [], ...payload }));
+    if (!state.team.includes(owner)) state.team.push(owner);
+    if (!state.verticals.includes(vertical)) state.verticals.push(vertical);
+    selectedDate = date; periodStart = firstOfMonth(date); save(); closeModal(); render();
+  });
 }
 
 function showReminder(force = false) {
