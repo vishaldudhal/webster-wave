@@ -2,22 +2,21 @@
 
 **Webster Actions, Visibility & Execution**
 
-A focused, browser-based calendar for planning and tracking Webster's business development and marketing actions over a rolling 30-day period.
+A calendar-focused business development command centre for planning, assigning, and executing Webster's growth activity over a rolling 30-day period.
 
 - Live: https://webster-wave.vercel.app
 - Repository: https://github.com/vishaldudhal/webster-wave
 
 ## Included
 
-- Rolling 30-day calendar with start-date control
-- Today and selected-date states
-- Activity indicators and progress states
-- Eight business development verticals
-- Ready-made, editable checklist templates
-- Add, edit, complete, and delete activity flows
-- Automatic carry-forward of unfinished work to the next working day
-- Fixed-date event support
-- In-browser 10:00 AM daily reminder
+- Daily command overview for today's work, pending items, follow-ups, and completions
+- Rolling 30-day calendar with activity counts, priority signals, progress, and carry-forward states
+- Detailed activity workspace with dynamic checklists, notes, resources, progress, and history
+- Central owner assignments and owner filtering without team logins
+- Eight customizable business development checklist templates
+- Automatic working-day carry-forward with fixed-date support
+- Follow-up tracking and priority-aware 10:00 AM morning briefing
+- Backward-compatible migration of existing activity data
 - Local browser storage with no account or backend
 - Responsive desktop and mobile layouts
 
@@ -41,4 +40,4 @@ The deployable output is generated in `dist/`.
 
 ## Data model
 
-The planner stores activities in `localStorage` under the original `growth30.planner.v1` key to preserve existing browser data. Data stays in the current browser and device. Clearing browser storage removes the plan.
+WAVE stores activities in `localStorage` under the original `growth30.planner.v1` key to preserve existing browser data. The current schema is applied automatically without replacing old activities. Data stays in the current browser and device. Clearing browser storage removes the plan.
