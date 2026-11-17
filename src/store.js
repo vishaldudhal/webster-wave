@@ -103,6 +103,39 @@ function readState() {
 export const state = readState();
 export function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
+function normalizedState(source) {
+  if (!source || typeof source !== "object" || !Array.isArray(source.activities)) throw new Error("This file does not contain a valid WAVE plan.");
+  if (Number(source.schemaVersion || 1) > 3) throw new Error("This backup was created by a newer version of WAVE.");
+  if (source.recurrences != null && !Array.isArray(source.recurrences)) throw new Error("The recurring schedule data is invalid.");
+  const activities = source.activities.map(normalizeActivity);
+  return {
+    schemaVersion: 3,
+    activities,
+    recurrences: (source.recurrences || []).map(normalizeSchedule),
+    team: Array.from(new Set([DEFAULT_OWNER, ...(Array.isArray(source.team) ? source.team : []), ...activities.map((item) => item.owner).filter(Boolean)])),
+    verticals: Array.from(new Set([...DEFAULT_VERTICALS, ...(Array.isArray(source.verticals) ? source.verticals : []), ...activities.map((item) => item.vertical).filter(Boolean)])),
+  };
+}
+
+export function createBackup() {
+  return {
+    format: "webster-wave-backup",
+    backupVersion: 1,
+    exportedAt: new Date().toISOString(),
+    appVersion: "0.4.0",
+    data: JSON.parse(JSON.stringify(state)),
+  };
+}
+
+export function restoreBackup(backup) {
+  const source = backup?.format === "webster-wave-backup" ? backup.data : backup;
+  const restored = normalizedState(source);
+  for (const key of Object.keys(state)) delete state[key];
+  Object.assign(state, restored);
+  save();
+  return { activities: state.activities.length, recurrences: state.recurrences.length };
+}
+
 function occurrenceDates(schedule, throughDate) {
   const end = schedule.until && schedule.until < throughDate ? schedule.until : throughDate;
   if (schedule.startDate > end) return [];

@@ -21,6 +21,7 @@ A connected business development command centre for recurring planning, weekly e
 - Follow-up tracking and priority-aware 10:00 AM morning briefing
 - Backward-compatible version 3 migration of existing activity data
 - Local browser storage with no account or backend
+- Complete JSON backup and validated restore, including schedules and local attachments
 - Responsive desktop and mobile layouts
 
 ## Architecture
@@ -50,4 +51,4 @@ The deployable output is generated in `dist/`.
 
 ## Data model
 
-WAVE stores activities and recurring schedules in `localStorage` under the original `growth30.planner.v1` key. The version 3 schema is applied automatically without replacing old activities. Attachments are stored as browser-local data and limited to 1.5 MB per file. Clearing browser storage removes the plan.
+WAVE stores activities and recurring schedules in `localStorage` under the original `growth30.planner.v1` key. The version 3 schema is applied automatically without replacing old activities. Attachments are stored as browser-local data and limited to 1.5 MB per file. Use **Backup & restore** to download a complete portable JSON copy before clearing browser storage or moving to another device.

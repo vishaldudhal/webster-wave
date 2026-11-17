@@ -1,7 +1,7 @@
 import "./styles.css";
 import { ACTIVITY_TYPE_SUGGESTIONS, CATEGORY_SUGGESTIONS, DEFAULT_OWNER, DISMISS_KEY, PLATFORM_SUGGESTIONS, PRIORITIES, STATUSES, VERTICAL_TEMPLATES } from "./config.js";
 import { daysInMonth, endOfWeek, firstOfMonth, lastOfMonth, monthTitle, niceDate, parseDate, shiftDate, shiftMonth, startOfWeek, today, weekDay } from "./dates.js";
-import { addActivity, carryForward, deleteActivity, getSchedule, isFollowUpDue, progress, save, state, statusOf, syncRecurrences, uid, updateActivity } from "./store.js";
+import { addActivity, carryForward, createBackup, deleteActivity, getSchedule, isFollowUpDue, progress, restoreBackup, save, state, statusOf, syncRecurrences, uid, updateActivity } from "./store.js";
 
 let viewMode = "month";
 let monthStart = firstOfMonth();
@@ -53,7 +53,7 @@ function render() {
   app.innerHTML = `<div class="app-shell">
     <header class="app-header">
       <div class="brand-lockup"><div class="brand-mark">W</div><div><div class="eyebrow">Business Development Command Centre</div><h1>Webster WAVE</h1><p class="subtitle">Actions, visibility and execution across one connected planning system.</p></div></div>
-      <div class="header-actions"><button class="button reminder-preview" id="previewReminder">☀ Morning briefing</button><button class="button primary" id="addTop">＋ Add activity</button></div>
+      <div class="header-actions"><button class="button reminder-preview" id="previewReminder">☀ Morning briefing</button><button class="button" id="openDataTools">↕ Backup & restore</button><button class="button primary" id="addTop">＋ Add activity</button></div>
     </header>
     <section class="command-strip" id="commandStrip" aria-label="Daily command centre"></section>
     <section class="control-bar">
@@ -72,6 +72,7 @@ function render() {
 function bindShellEvents() {
   document.querySelector("#addTop").addEventListener("click", () => showActivityForm(null, selectedDate));
   document.querySelector("#previewReminder").addEventListener("click", () => showReminder(true));
+  document.querySelector("#openDataTools").addEventListener("click", showDataTools);
   document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => {
     viewMode = button.dataset.view;
     if (viewMode === "month") monthStart = firstOfMonth(selectedDate);
@@ -222,6 +223,59 @@ function readFile(file) {
     reader.onload = () => resolve({ id: uid(), name: file.name, type: file.type, size: file.size, data: reader.result });
     reader.onerror = reject;
     reader.readAsDataURL(file);
+  });
+}
+
+function downloadBackup() {
+  const backup = createBackup();
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `webster-wave-backup-${today()}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function showDataTools() {
+  openModal(`<article class="modal data-modal" role="dialog" aria-modal="true"><header class="modal-head"><div><div class="eyebrow">Data safety</div><h2>Backup & restore</h2><p class="modal-description">Keep a portable copy of the full WAVE plan, including recurring schedules and local attachments.</p></div><button class="close-button" data-close>×</button></header>
+    <div class="data-summary"><div><strong>${state.activities.length}</strong><span>Activities</span></div><div><strong>${state.recurrences.length}</strong><span>Recurring schedules</span></div><div><strong>${state.team.length}</strong><span>Owners</span></div></div>
+    <section class="data-action"><div><strong>Download a complete backup</strong><p>Save a dated JSON file that can restore this browser or move the plan to another device.</p></div><button class="button primary" id="downloadBackup">Download backup</button></section>
+    <section class="data-action restore-action"><div><strong>Restore from a backup</strong><p>Choose a WAVE JSON backup. The file is checked before your current plan is replaced.</p></div><label class="button file-button">Choose backup<input id="restoreInput" type="file" accept="application/json,.json"/></label></section>
+    <div class="restore-preview hidden" id="restorePreview"></div><p class="form-error hidden" id="restoreError"></p>
+  </article>`);
+  overlay.querySelector("#downloadBackup").addEventListener("click", downloadBackup);
+  overlay.querySelector("#restoreInput").addEventListener("change", async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const error = overlay.querySelector("#restoreError");
+    const preview = overlay.querySelector("#restorePreview");
+    error.classList.add("hidden"); preview.classList.add("hidden");
+    try {
+      if (file.size > 25_000_000) throw new Error("This backup is larger than the 25 MB restore limit.");
+      const backup = JSON.parse(await file.text());
+      const source = backup?.format === "webster-wave-backup" ? backup.data : backup;
+      if (!source || !Array.isArray(source.activities)) throw new Error("This file does not contain a valid WAVE plan.");
+      preview.innerHTML = `<div><strong>${source.activities.length}</strong><span>activities found in ${escapeHtml(file.name)}</span></div><button class="button primary" id="confirmRestore">Replace current plan</button>`;
+      preview.classList.remove("hidden");
+      overlay.querySelector("#confirmRestore").addEventListener("click", () => {
+        if (!window.confirm(`Replace the current WAVE plan with ${source.activities.length} activities from this backup? Download a backup first if you may need the current data.`)) return;
+        try {
+          restoreBackup(backup);
+          ownerFilter = "All"; verticalFilter = "All"; statusFilter = "All";
+          selectedDate = today(); monthStart = firstOfMonth(); weekStart = startOfWeek();
+          closeModal(); render();
+        } catch (restoreError) {
+          error.textContent = restoreError.message || "The backup could not be restored.";
+          error.classList.remove("hidden");
+        }
+      });
+    } catch (fileError) {
+      error.textContent = fileError instanceof SyntaxError ? "This is not a readable JSON backup." : (fileError.message || "The backup could not be read.");
+      error.classList.remove("hidden");
+    } finally { event.target.value = ""; }
   });
 }
 
