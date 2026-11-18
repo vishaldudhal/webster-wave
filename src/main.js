@@ -3,18 +3,51 @@ import { ACTIVITY_TYPE_SUGGESTIONS, BLOG_TYPES, CATEGORY_SUGGESTIONS, DEFAULT_OW
 import { daysInMonth, endOfWeek, firstOfMonth, lastOfMonth, monthTitle, niceDate, parseDate, shiftDate, shiftMonth, startOfWeek, today, weekDay } from "./dates.js";
 import { addActivity, carryForward, createBackup, deleteActivity, getSchedule, isFollowUpDue, loadDemoData, progress, restoreBackup, save, state, statusOf, syncRecurrences, uid, updateActivity } from "./store.js";
 
-let activeModule = "overview";
-let viewMode = "week";
-let monthStart = firstOfMonth();
-let weekStart = startOfWeek();
-let selectedDate = today();
-let plannerFilter = "All";
-let activitySearch = "";
-let ownerFilter = "All";
-let verticalFilter = "All";
-let statusFilter = "All";
+const UI_DEFAULTS = {
+  activeModule: "overview",
+  viewMode: "week",
+  monthStart: firstOfMonth(),
+  weekStart: startOfWeek(),
+  selectedDate: today(),
+  plannerFilter: "All",
+  activitySearch: "",
+  ownerFilter: "All",
+  verticalFilter: "All",
+  statusFilter: "All",
+  sidebarCollapsed: false,
+};
+
+function readUiPreferences() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(UI_KEY) || "{}");
+    const date = (value, fallback) => /^\d{4}-\d{2}-\d{2}$/.test(value || "") && !Number.isNaN(parseDate(value).getTime()) ? value : fallback;
+    return {
+      activeModule: ["overview", "planner", "activities", "settings"].includes(stored.activeModule) ? stored.activeModule : UI_DEFAULTS.activeModule,
+      viewMode: ["week", "month"].includes(stored.viewMode) ? stored.viewMode : UI_DEFAULTS.viewMode,
+      monthStart: firstOfMonth(date(stored.monthStart, UI_DEFAULTS.monthStart)),
+      weekStart: startOfWeek(date(stored.weekStart, UI_DEFAULTS.weekStart)),
+      selectedDate: date(stored.selectedDate, UI_DEFAULTS.selectedDate),
+      plannerFilter: ["All", "Marketing", "Business Development"].includes(stored.plannerFilter) ? stored.plannerFilter : UI_DEFAULTS.plannerFilter,
+      activitySearch: typeof stored.activitySearch === "string" ? stored.activitySearch : UI_DEFAULTS.activitySearch,
+      ownerFilter: typeof stored.ownerFilter === "string" ? stored.ownerFilter : UI_DEFAULTS.ownerFilter,
+      verticalFilter: typeof stored.verticalFilter === "string" ? stored.verticalFilter : UI_DEFAULTS.verticalFilter,
+      statusFilter: ["All", ...STATUSES].includes(stored.statusFilter) ? stored.statusFilter : UI_DEFAULTS.statusFilter,
+      sidebarCollapsed: stored.sidebarCollapsed === true,
+    };
+  } catch {
+    return { ...UI_DEFAULTS };
+  }
+}
+
+const uiPreferences = readUiPreferences();
+let { activeModule, viewMode, monthStart, weekStart, selectedDate, plannerFilter, activitySearch, ownerFilter, verticalFilter, statusFilter, sidebarCollapsed } = uiPreferences;
+if (ownerFilter !== "All" && !state.team.includes(ownerFilter)) ownerFilter = "All";
+if (verticalFilter !== "All" && !state.verticals.includes(verticalFilter)) verticalFilter = "All";
 let reminderShown = false;
-let sidebarCollapsed = JSON.parse(localStorage.getItem(UI_KEY) || "{}").sidebarCollapsed || false;
+
+function saveUiPreferences() {
+  localStorage.setItem(UI_KEY, JSON.stringify({ activeModule, viewMode, monthStart, weekStart, selectedDate, plannerFilter, activitySearch, ownerFilter, verticalFilter, statusFilter, sidebarCollapsed }));
+}
 
 const app = document.querySelector("#app");
 const overlay = document.querySelector("#overlay");
@@ -53,6 +86,7 @@ function ensureVisibleRecurrences() {
 }
 
 function render() {
+  saveUiPreferences();
   if (localStorage.getItem(SESSION_KEY) !== "active") { renderLogin(); return; }
   ensureVisibleRecurrences();
   const notifications = notificationItems();
@@ -79,7 +113,7 @@ function render() {
 function bindShellEvents() {
   document.querySelector("#addTop").addEventListener("click", () => showActivityForm(null, selectedDate));
   document.querySelectorAll("[data-module]").forEach((button) => button.addEventListener("click", () => { activeModule = button.dataset.module; closeMobileSidebar(); render(); }));
-  document.querySelector("#sidebarToggle").addEventListener("click", () => { sidebarCollapsed = !sidebarCollapsed; localStorage.setItem(UI_KEY, JSON.stringify({ sidebarCollapsed })); render(); });
+  document.querySelector("#sidebarToggle").addEventListener("click", () => { sidebarCollapsed = !sidebarCollapsed; render(); });
   document.querySelector("#mobileMenu").addEventListener("click", () => { document.querySelector("#sidebar").classList.add("mobile-open"); document.querySelector("#mobileScrim").classList.remove("hidden"); });
   document.querySelector("#mobileScrim").addEventListener("click", closeMobileSidebar);
   document.querySelector("#notificationButton").addEventListener("click", (event) => { event.stopPropagation(); document.querySelector("#notificationsPopover").classList.toggle("hidden"); document.querySelector("#profileMenu").classList.add("hidden"); });
@@ -146,8 +180,8 @@ function renderPlanner() {
 function renderActivities() {
   const activities = filteredActivities().filter((activity) => !activitySearch || `${activity.title} ${activity.topic} ${activity.vertical} ${activity.owner}`.toLowerCase().includes(activitySearch.toLowerCase())).sort((a,b) => b.date.localeCompare(a.date));
   document.querySelector("#viewRoot").innerHTML = `<section class="module-toolbar activity-toolbar"><label class="search-box">⌕<input id="activitySearch" placeholder="Search activities, owners or verticals" value="${escapeHtml(activitySearch)}"/></label><div class="filters"><label>Vertical<select id="verticalFilter">${optionList(state.verticals, verticalFilter, true)}</select></label><label>Status<select id="statusFilter">${optionList(STATUSES, statusFilter, true)}</select></label><label>Owner<select id="ownerFilter">${optionList(state.team, ownerFilter, true)}</select></label></div></section><section class="surface activity-manager"><header class="activity-table-head"><span>Activity</span><span>Vertical</span><span>Owner</span><span>Scheduled</span><span>Status</span><span>Progress</span></header><div class="activity-table-body">${activities.length ? activities.map((activity) => `<button class="activity-table-row" data-activity="${activity.id}"><span class="activity-name"><i class="priority-dot ${priorityClass(activity.priority)}"></i><span><strong>${escapeHtml(activity.title)}</strong><small>${escapeHtml(activity.topic || activity.platform || "No additional context")}</small></span></span><span data-label="Vertical">${escapeHtml(activity.vertical)}</span><span data-label="Owner"><i class="avatar-mini">${escapeHtml(initials(activity.owner))}</i>${escapeHtml(activity.owner)}</span><span data-label="Scheduled">${niceDate(activity.date, { year:"numeric" })}</span><span data-label="Status"><i class="status-pill ${statusClass(activity)}">${statusOf(activity)}</i></span><span data-label="Progress"><span class="table-progress"><i style="width:${progress(activity)}%"></i></span><b>${progress(activity)}%</b></span></button>`).join("") : emptyBlock("⌕", "No matching activities", "Adjust the search or filters.")}</div><footer class="table-footer"><span>${activities.length} activities</span><span>${activities.filter((item) => progress(item) === 100).length} completed</span></footer></section>`;
-  document.querySelector("#activitySearch").addEventListener("input", (event) => { activitySearch = event.target.value; renderActivities(); });
-  [["verticalFilter","verticalFilter"],["statusFilter","statusFilter"],["ownerFilter","ownerFilter"]].forEach(([id,key]) => document.querySelector(`#${id}`).addEventListener("change", (event) => { if (key === "verticalFilter") verticalFilter = event.target.value; if (key === "statusFilter") statusFilter = event.target.value; if (key === "ownerFilter") ownerFilter = event.target.value; renderActivities(); }));
+  document.querySelector("#activitySearch").addEventListener("input", (event) => { activitySearch = event.target.value; saveUiPreferences(); renderActivities(); });
+  [["verticalFilter","verticalFilter"],["statusFilter","statusFilter"],["ownerFilter","ownerFilter"]].forEach(([id,key]) => document.querySelector(`#${id}`).addEventListener("change", (event) => { if (key === "verticalFilter") verticalFilter = event.target.value; if (key === "statusFilter") statusFilter = event.target.value; if (key === "ownerFilter") ownerFilter = event.target.value; saveUiPreferences(); renderActivities(); }));
   document.querySelectorAll("[data-activity]").forEach((button) => button.addEventListener("click", () => showActivityDetail(button.dataset.activity)));
 }
 
@@ -376,7 +410,7 @@ function showDataTools() {
         if (!window.confirm(`Replace the current WAVE plan with ${source.activities.length} activities from this backup? Download a backup first if you may need the current data.`)) return;
         try {
           restoreBackup(backup);
-          ownerFilter = "All"; verticalFilter = "All"; statusFilter = "All";
+          ownerFilter = "All"; verticalFilter = "All"; statusFilter = "All"; plannerFilter = "All"; activitySearch = "";
           selectedDate = today(); monthStart = firstOfMonth(); weekStart = startOfWeek();
           closeModal(); render();
         } catch (restoreError) {

@@ -33,6 +33,13 @@ test("login, modules, multi-channel planning and mobile containment", async ({ p
   await page.locator("#activitySearch").fill("launch proof");
   await expect(page.getByText("Multi-channel launch proof", { exact: true })).toBeVisible();
 
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Activities", exact: true })).toBeVisible();
+  await expect(page.locator("#activitySearch")).toHaveValue("launch proof");
+  await expect(page.getByText("Multi-channel launch proof", { exact: true })).toBeVisible();
+  const dismissBriefing = page.getByRole("button", { name: "Dismiss", exact: true });
+  if (await dismissBriefing.isVisible()) await dismissBriefing.click();
+
   await page.getByRole("button", { name: /Settings/ }).click();
   await expect(page.getByRole("heading", { name: "Data backup & restore" })).toBeVisible();
   await page.locator("#openDataTools").click();
@@ -63,4 +70,27 @@ test("version 3 plans migrate without losing activities", async ({ page }) => {
   const migrated = await page.evaluate(() => JSON.parse(localStorage.getItem("growth30.planner.v1")));
   expect(migrated.schemaVersion).toBe(4);
   expect(migrated.activities[0].publicationTargets).toEqual([{ channel: "LinkedIn", status: "Scheduled" }]);
+});
+
+test("planner view, period and filters persist across reloads", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("webster.wave.session.v1", "active"));
+  await page.goto("/");
+  const dismissBriefing = page.getByRole("button", { name: "Dismiss", exact: true });
+  if (await dismissBriefing.isVisible()) await dismissBriefing.click();
+
+  await page.getByRole("button", { name: /Planner/ }).click();
+  await page.getByRole("button", { name: "Monthly Calendar" }).click();
+  await page.getByRole("button", { name: "Marketing", exact: true }).click();
+  await page.locator("#ownerFilter").selectOption("Aisha");
+  await page.locator("#statusFilter").selectOption("In progress");
+  await page.locator("#nextPeriod").click();
+  const visibleMonth = await page.locator(".calendar-panel h2").textContent();
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Planner", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Monthly Calendar" })).toHaveClass(/active/);
+  await expect(page.getByRole("button", { name: "Marketing", exact: true })).toHaveClass(/active/);
+  await expect(page.locator("#ownerFilter")).toHaveValue("Aisha");
+  await expect(page.locator("#statusFilter")).toHaveValue("In progress");
+  await expect(page.locator(".calendar-panel h2")).toHaveText(visibleMonth);
 });

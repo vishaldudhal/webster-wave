@@ -26,6 +26,7 @@ A premium, connected business development and marketing command centre for plann
 - Backward-compatible version 4 migration of existing activity data
 - Local browser storage with no account or backend
 - Complete JSON backup and validated restore, including schedules and local attachments
+- Persistent navigation, planner view, dates, filters, and activity search across browser reloads
 - Responsive desktop and mobile layouts
 
 ## Architecture
