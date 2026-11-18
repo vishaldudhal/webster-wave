@@ -1,7 +1,7 @@
 import "./styles.css";
 import { ACTIVITY_TYPE_SUGGESTIONS, BLOG_TYPES, CATEGORY_SUGGESTIONS, DEFAULT_OWNER, DISMISS_KEY, MARKETING_CHANNELS, PLATFORM_SUGGESTIONS, PRIORITIES, PUBLISHING_STATUSES, SESSION_KEY, STATUSES, UI_KEY, VERTICAL_TEMPLATES } from "./config.js";
 import { daysInMonth, endOfWeek, firstOfMonth, lastOfMonth, monthTitle, niceDate, parseDate, shiftDate, shiftMonth, startOfWeek, today, weekDay } from "./dates.js";
-import { addActivity, carryForward, createBackup, deleteActivity, getSchedule, isFollowUpDue, progress, restoreBackup, save, state, statusOf, syncRecurrences, uid, updateActivity } from "./store.js";
+import { addActivity, carryForward, createBackup, deleteActivity, getSchedule, isFollowUpDue, loadDemoData, progress, restoreBackup, save, state, statusOf, syncRecurrences, uid, updateActivity } from "./store.js";
 
 let activeModule = "overview";
 let viewMode = "week";
@@ -158,6 +158,7 @@ function renderSettings() {
     <section class="surface settings-card wide"><header><span class="settings-icon">▦</span><div><h3>Verticals & activity templates</h3><p>Keep the eight core verticals and tailor their execution checklists.</p></div></header><div class="template-grid">${state.verticals.map((vertical) => `<div><span><strong>${escapeHtml(vertical)}</strong><small>${(state.templates[vertical] || []).length} template steps</small></span><button class="button compact" data-edit-template="${escapeHtml(vertical)}">Edit template</button>${!Object.hasOwn(VERTICAL_TEMPLATES, vertical) ? `<button class="icon-danger" data-remove-vertical="${escapeHtml(vertical)}">×</button>` : ""}</div>`).join("")}</div><form class="inline-add" id="verticalForm"><input id="newVertical" required placeholder="Add a custom vertical"/><button class="button">Add vertical</button></form></section>
     <section class="surface settings-card"><header><span class="settings-icon">◫</span><div><h3>Working days & holidays</h3><p>Control automatic carry-forward days.</p></div></header><div class="day-toggles">${workingDays.map(([value,label]) => `<label><input type="checkbox" data-working-day value="${value}" ${state.settings.workingDays.includes(value) ? "checked" : ""}/><span>${label}</span></label>`).join("")}</div><div class="holiday-list">${state.settings.holidays.length ? state.settings.holidays.map((date) => `<span>${niceDate(date,{year:"numeric"})}<button data-remove-holiday="${date}">×</button></span>`).join("") : '<p class="empty-copy">No holidays added.</p>'}</div><form class="inline-add" id="holidayForm"><input id="holidayDate" type="date" required/><button class="button">Add holiday</button></form></section>
     <section class="surface settings-card"><header><span class="settings-icon">♢</span><div><h3>Reminder preferences</h3><p>Choose when WAVE prepares the daily briefing.</p></div></header><label class="settings-toggle"><span><strong>Morning briefing</strong><small>Show priorities and due follow-ups</small></span><input id="reminderEnabled" type="checkbox" ${state.settings.reminderEnabled ? "checked" : ""}/><i></i></label><label class="field">Briefing time<input id="reminderTime" type="time" value="${state.settings.reminderTime}"/></label></section>
+    <section class="surface settings-card wide demo-settings"><header><span class="settings-icon">✦</span><div><h3>Demo workspace</h3><p>Load a realistic Webster plan across every vertical and publishing channel.</p></div><button class="button" id="loadDemoData">Load demo data</button></header><p>Includes daily priorities, completed and carried work, follow-ups, recurring reviews, multi-channel content, owners, notes, outcomes, and upcoming activities. Your profile and workspace preferences are preserved.</p></section>
     <section class="surface settings-card wide data-settings"><header><span class="settings-icon">↕</span><div><h3>Data backup & restore</h3><p>Download a complete portable copy or restore a previous WAVE workspace.</p></div><button class="button primary" id="openDataTools">Open backup tools</button></header><div class="data-facts"><span><strong>${state.activities.length}</strong> activities</span><span><strong>${state.recurrences.length}</strong> recurring schedules</span><span><strong>${state.team.length}</strong> team members</span></div></section></div>`;
   bindSettingsEvents();
 }
@@ -174,6 +175,10 @@ function bindSettingsEvents() {
   document.querySelectorAll("[data-remove-holiday]").forEach((button) => button.addEventListener("click", () => { state.settings.holidays = state.settings.holidays.filter((date) => date !== button.dataset.removeHoliday); save(); render(); }));
   document.querySelector("#reminderEnabled").addEventListener("change", (event) => { state.settings.reminderEnabled = event.target.checked; save(); });
   document.querySelector("#reminderTime").addEventListener("change", (event) => { state.settings.reminderTime = event.target.value || "10:00"; save(); });
+  document.querySelector("#loadDemoData").addEventListener("click", () => {
+    if (!window.confirm("Replace the current activity plan with the WAVE demo workspace? Download a backup first if you need the current activities.")) return;
+    loadDemoData(); ownerFilter = "All"; verticalFilter = "All"; statusFilter = "All"; plannerFilter = "All"; activitySearch = ""; selectedDate = today(); monthStart = firstOfMonth(); weekStart = startOfWeek(); activeModule = "overview"; render();
+  });
   document.querySelector("#openDataTools").addEventListener("click", showDataTools);
 }
 

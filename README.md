@@ -12,6 +12,7 @@ A premium, connected business development and marketing command centre for plann
 - Daily command overview for today's work, pending items, follow-ups, and completions
 - Branded local workspace login, collapsible navigation, notifications, and profile controls
 - Dedicated Overview, Planner, Activities, and Settings modules backed by one shared data model
+- Realistic 23-activity demo workspace for new browsers plus a protected Settings loader for existing workspaces
 - Synchronized monthly calendar and Monday-to-Sunday spreadsheet planner
 - Channel-by-day weekly marketing board with inline titles and independent publishing status per channel
 - Weekly planning fields for platform, activity type, category, topic, assignment, and details

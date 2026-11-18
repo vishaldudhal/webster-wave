@@ -73,19 +73,56 @@ function templateFrom(activity) {
   };
 }
 
-function createExamples() {
+function createDemoState(profile = { name: DEFAULT_OWNER, email: "", role: "Business Development" }) {
   const base = today();
-  const create = (offset, title, vertical, completed = 0, priority = "Medium", platform = "") => normalizeActivity({
-    title, vertical, priority, platform, owner: DEFAULT_OWNER, date: shiftDate(base, offset), originalDate: shiftDate(base, offset),
-    items: VERTICAL_TEMPLATES[vertical].map((label, index) => ({ label, done: index < completed })),
-  });
-  return [
-    create(0, "Plan this week’s LinkedIn insight", "Marketing", 2, "Medium", "LinkedIn"),
-    create(0, "Reach out to five potential clients", "Direct Outreach", 1, "High", "LinkedIn"),
-    create(1, "Reconnect with two former clients", "Past Client Development", 0, "High", "Email"),
-    create(3, "Review new business enquiries", "Inbound", 0, "High", "Website"),
-    create(5, "Explore an agency collaboration", "Partnerships", 0, "Medium", "Meeting"),
+  const team = [profile.name || DEFAULT_OWNER, "Aisha", "Rahul"];
+  const make = (offset, title, vertical, options = {}) => {
+    const labels = options.steps || VERTICAL_TEMPLATES[vertical] || [];
+    const date = shiftDate(base, offset);
+    return normalizeActivity({
+      title, vertical, date, originalDate: options.originalDate || date,
+      owner: options.owner || team[0], priority: options.priority || "Medium",
+      platform: options.platform || "", activityType: options.activityType || "",
+      category: options.category || "", topic: options.topic || "", blogType: options.blogType || "",
+      additionalDetails: options.details || "", notes: options.notes || "", outcome: options.outcome || "",
+      resources: options.resources || "", followUpDate: options.followUpDate || "", followUpDone: Boolean(options.followUpDone),
+      fixed: Boolean(options.fixed), manualDone: Boolean(options.manualDone), publicationTargets: options.publicationTargets || [],
+      items: labels.map((label, index) => ({ label, done: index < (options.completed || 0) })),
+      history: options.history || [], recurrenceId: options.recurrenceId || "", occurrenceDate: options.occurrenceDate || "",
+    });
+  };
+
+  const carriedFrom = shiftDate(base, -2);
+  const recurrenceId = uid();
+  let recurringDate = base;
+  while (weekdayNumber(recurringDate) !== 5) recurringDate = shiftDate(recurringDate, 1);
+  const activities = [
+    make(0, "Publish the November LinkedIn insight", "Marketing", { owner: "Aisha", platform: "LinkedIn", activityType: "Post", category: "Awareness", topic: "Why consistency compounds in digital growth", priority: "High", completed: 4, publicationTargets: [{ channel: "LinkedIn", status: "Scheduled" }, { channel: "Twitter / X", status: "Draft" }], details: "Final copy approved. Add the client-safe example and schedule for 5:30 PM.", notes: "Use the sage campaign template.", resources: "https://webster.co.in" }),
+    make(0, "Follow up with five warm prospects", "Direct Outreach", { priority: "High", platform: "Email", activityType: "Follow-up", category: "Conversion", completed: 3, followUpDate: base, details: "Prioritize the prospects who opened the proposal twice.", notes: "Personalize the first line for each contact." }),
+    make(0, "Qualify the new website enquiry", "Inbound", { owner: "Rahul", priority: "High", platform: "Website", activityType: "Call", category: "Lead generation", completed: 2, followUpDate: base, details: "Discovery call for a manufacturing website redesign.", resources: "https://webster.co.in/contact" }),
+    make(0, "Visit the Kothrud manufacturing cluster", "Local Business Development", { fixed: true, platform: "In person", activityType: "Visit", category: "Lead generation", completed: 1, details: "Meet three shortlisted businesses and record decision-maker details." }),
+    make(0, "Send the revised partnership proposal", "Partnerships", { owner: "Rahul", priority: "High", platform: "Email", activityType: "Proposal", category: "Partnership", completed: 3, originalDate: carriedFrom, history: [{ type: "carried", from: carriedFrom, to: base, at: new Date().toISOString() }], details: "Updated scope includes referral ownership and quarterly co-marketing." }),
+    make(0, "Introduce Webster to Rohan’s founder network", "Existing Network", { completed: 6, platform: "WhatsApp", activityType: "Follow-up", category: "Relationship", outcome: "Warm introduction made to two founders." }),
+    make(1, "Create the client-results carousel", "Marketing", { owner: "Aisha", platform: "Instagram", activityType: "Post", category: "Awareness", completed: 2, publicationTargets: [{ channel: "Instagram", status: "Draft" }, { channel: "Facebook", status: "Idea" }], details: "Five slides: challenge, approach, transformation, metric, CTA." }),
+    make(1, "Reconnect with Meridian Engineering", "Past Client Development", { priority: "High", platform: "Phone", activityType: "Call", category: "Retention", completed: 1, followUpDate: shiftDate(base, 2), details: "Explore annual website maintenance and SEO support." }),
+    make(2, "Draft Life at Webster culture story", "Marketing", { owner: "Aisha", platform: "Life at Webster Blog", blogType: "Life at Webster", activityType: "Article", category: "Engagement", completed: 2, publicationTargets: [{ channel: "Blogs", status: "Draft" }, { channel: "LinkedIn", status: "Idea" }], topic: "How the team runs Monday planning", details: "Include candid team photographs and one quote from each department." }),
+    make(2, "Explore co-selling with Northstar Consulting", "Partnerships", { owner: "Rahul", platform: "Meeting", activityType: "Meeting", category: "Partnership", completed: 2, followUpDate: shiftDate(base, 4), details: "Define the shared ICP and referral handoff." }),
+    make(3, "Record the website audit walkthrough", "Marketing", { owner: "Aisha", platform: "YouTube", activityType: "Video", category: "Awareness", priority: "High", completed: 1, publicationTargets: [{ channel: "YouTube", status: "In review" }, { channel: "Instagram", status: "Idea" }], details: "Eight-minute screen recording with three actionable fixes." }),
+    make(3, "Friday pipeline and follow-up review", "Existing Network", { recurrenceId, occurrenceDate: recurringDate, platform: "Meeting", activityType: "Review", category: "Relationship", completed: 0, fixed: true, details: "Review every open conversation and set the next action." }),
+    make(4, "Attend Pune Founders Circle meetup", "Events & Networking", { owner: "Rahul", fixed: true, platform: "In person", activityType: "Event", category: "Networking", completed: 1, details: "Target five meaningful conversations, not card collection." }),
+    make(5, "Prepare the local business audit offer", "Local Business Development", { platform: "Website", activityType: "Proposal", category: "Conversion", completed: 2, details: "Package a 30-minute digital presence audit for local manufacturers." }),
+    make(6, "Build a shortlist of SaaS founders", "Direct Outreach", { owner: "Rahul", platform: "LinkedIn", activityType: "Research", category: "Lead generation", completed: 1, details: "Twenty Maharashtra-based B2B SaaS companies with 10–100 employees." }),
+    make(7, "Publish the monthly founder note", "Marketing", { platform: "General Blog", blogType: "General Blog", activityType: "Article", category: "Awareness", completed: 1, publicationTargets: [{ channel: "Blogs", status: "Idea" }, { channel: "LinkedIn", status: "Idea" }, { channel: "Twitter / X", status: "Idea" }], topic: "Sustainable growth beats random activity" }),
+    make(8, "Review dormant client opportunities", "Past Client Development", { owner: "Rahul", platform: "Email", activityType: "Research", category: "Retention", completed: 0, details: "Review the last twelve months and identify five relevant re-entry points." }),
+    make(9, "Plan the December content calendar", "Marketing", { owner: "Aisha", platform: "Meeting", activityType: "Planning", category: "Awareness", completed: 0, publicationTargets: [{ channel: "Instagram", status: "Idea" }, { channel: "Facebook", status: "Idea" }, { channel: "LinkedIn", status: "Idea" }, { channel: "YouTube", status: "Idea" }] }),
+    make(10, "Respond to the e-commerce redesign enquiry", "Inbound", { priority: "High", platform: "Email", activityType: "Proposal", category: "Conversion", completed: 0, followUpDate: shiftDate(base, 11), details: "Send relevant work, process, timeline range, and discovery questions." }),
+    make(-1, "Publish the Diwali campaign recap", "Marketing", { owner: "Aisha", platform: "Instagram", activityType: "Post", category: "Engagement", completed: 6, publicationTargets: [{ channel: "Instagram", status: "Published" }, { channel: "Facebook", status: "Published" }], outcome: "4.8% engagement rate and three inbound conversations." }),
+    make(-1, "Complete the referral conversation with Neha", "Existing Network", { completed: 6, platform: "Phone", activityType: "Call", category: "Relationship", outcome: "Introduction scheduled for next week." }),
+    make(-2, "Follow up after the industrial expo", "Events & Networking", { owner: "Rahul", completed: 6, platform: "Email", activityType: "Follow-up", category: "Networking", outcome: "Six replies, two discovery calls booked." }),
+    make(-3, "Send the quarterly care-plan review", "Past Client Development", { completed: 6, platform: "Email", activityType: "Review", category: "Retention", outcome: "Renewal confirmed for another quarter." }),
   ];
+  const recurrence = normalizeSchedule({ id: recurrenceId, frequency: "weekly", startDate: recurringDate, template: { title: "Friday pipeline and follow-up review", vertical: "Existing Network", owner: team[0], priority: "Medium", platform: "Meeting", activityType: "Review", category: "Relationship", additionalDetails: "Review every open conversation and set the next action.", fixed: true, checklist: VERTICAL_TEMPLATES["Existing Network"] } });
+  return { schemaVersion: 4, activities, recurrences: [recurrence], team, verticals: [...DEFAULT_VERTICALS], profile: { name: profile.name || DEFAULT_OWNER, email: profile.email || "", role: profile.role || "Business Development" }, settings: { workingDays: [1, 2, 3, 4, 5], holidays: [], reminderEnabled: true, reminderTime: "10:00" }, templates: { ...VERTICAL_TEMPLATES } };
 }
 
 function readState() {
@@ -106,7 +143,7 @@ function readState() {
       };
     }
   } catch { /* Fall through to starter data. */ }
-  return { schemaVersion: 4, activities: createExamples(), recurrences: [], team: [DEFAULT_OWNER], verticals: [...DEFAULT_VERTICALS], profile: { name: DEFAULT_OWNER, email: "", role: "Business Development" }, settings: { workingDays: [1, 2, 3, 4, 5], holidays: [], reminderEnabled: true, reminderTime: "10:00" }, templates: { ...VERTICAL_TEMPLATES } };
+  return createDemoState();
 }
 
 export const state = readState();
@@ -144,6 +181,16 @@ export function restoreBackup(backup) {
   const restored = normalizedState(source);
   for (const key of Object.keys(state)) delete state[key];
   Object.assign(state, restored);
+  save();
+  return { activities: state.activities.length, recurrences: state.recurrences.length };
+}
+
+export function loadDemoData() {
+  const demo = createDemoState(state.profile);
+  demo.settings = { ...state.settings };
+  demo.templates = { ...VERTICAL_TEMPLATES, ...state.templates };
+  for (const key of Object.keys(state)) delete state[key];
+  Object.assign(state, demo);
   save();
   return { activities: state.activities.length, recurrences: state.recurrences.length };
 }

@@ -24,7 +24,7 @@ test("login, modules, multi-channel planning and mobile containment", async ({ p
   const created = data.activities.filter((activity) => activity.title === "Multi-channel launch proof");
   expect(created).toHaveLength(1);
   expect(created[0].publicationTargets.map((target) => target.channel).sort()).toEqual(["LinkedIn", "YouTube"]);
-  await page.locator('[data-publish-status][data-channel="LinkedIn"]').last().selectOption("Published");
+  await page.locator('.week-card:has([data-inline-title][value="Multi-channel launch proof"]):has([data-channel="LinkedIn"]) select').selectOption("Published");
   const published = await page.evaluate(() => JSON.parse(localStorage.getItem("growth30.planner.v1")).activities.find((activity) => activity.title === "Multi-channel launch proof"));
   expect(published.publicationTargets.find((target) => target.channel === "LinkedIn").status).toBe("Published");
   await page.screenshot({ path: "test-results/wave-planner.png", fullPage: true });
@@ -38,6 +38,13 @@ test("login, modules, multi-channel planning and mobile containment", async ({ p
   await page.locator("#openDataTools").click();
   await expect(page.getByRole("heading", { name: "Backup & restore", exact: true })).toBeVisible();
   await page.locator("#overlay").getByRole("button", { name: "×" }).click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.locator("#loadDemoData").click();
+  await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
+  const demo = await page.evaluate(() => JSON.parse(localStorage.getItem("growth30.planner.v1")));
+  expect(demo.activities.length).toBeGreaterThanOrEqual(23);
+  expect(demo.activities.some((activity) => activity.title === "Multi-channel launch proof")).toBe(false);
+  expect(demo.profile.name).toBe("Vishal Dudhal");
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
