@@ -1,4 +1,4 @@
-# wave 1.0
+# wave 1.1
 
 **Webster Actions, Visibility & Execution**
 
@@ -10,9 +10,12 @@ A premium, connected business development and marketing command centre for plann
 ## Included
 
 - Visual-first Overview with a consolidated live daily snapshot, interactive focus list, weekly momentum, outcome metrics, upcoming work, and vertical balance
-- Branded local workspace login, collapsible navigation, notifications, and profile controls
+- Branded local workspace login, intentionally designed collapsible navigation, notifications, and profile controls
 - Independent Momentum brand identity with a lowercase wave wordmark and three-shape progress mark
-- Dedicated Overview, Planner, Activities, and Settings modules backed by one shared data model
+- Focused Overview, Planner, and Settings navigation backed by one shared data model
+- Planner-based activity search, filtering, management, and historical access without a duplicate Activities module
+- Separate minimal **Plan an Activity** and **Plan Content** creation workflows
+- Content lifecycle from Planned through Published, with independent status per publishing channel
 - Realistic 23-activity demo workspace for new browsers plus a protected Settings loader for existing workspaces
 - Synchronized monthly calendar and Monday-to-Sunday spreadsheet planner
 - Channel-by-day weekly marketing board with inline titles and independent publishing status per channel
@@ -23,8 +26,10 @@ A premium, connected business development and marketing command centre for plann
 - Central assignments plus vertical, status, and owner filtering without team logins
 - Eight business development verticals with customizable checklist templates
 - Capacity-aware working-day carry-forward with fixed-date and completed-work protection
-- Follow-up tracking and a configurable, priority-aware daily briefing
-- Backward-compatible version 4 migration of existing activity data
+- Follow-up tracking, actionable notifications, and an independent configurable daily briefing
+- Categorized Settings for profile, team, templates, preferences, notifications, integrations, and data management
+- Frontend-ready integration surfaces that never imply a connection before real authorization exists
+- Backward-compatible version 5 migration of existing activity data
 - Local browser storage with no account or backend
 - Complete JSON backup and validated restore, including schedules and local attachments
 - Persistent navigation, planner view, dates, filters, and activity search across browser reloads
@@ -34,7 +39,7 @@ A premium, connected business development and marketing command centre for plann
 
 - `src/store.js` owns activity persistence, migration, recurrence generation, and rescheduling.
 - `src/dates.js` contains calendar and working-day calculations.
-- `src/config.js` contains vertical templates and planning suggestions.
+- `src/config.js` contains vertical, activity, and content templates plus planning suggestions.
 - `src/main.js` renders both views against the same shared activity state.
 
 ## Run locally

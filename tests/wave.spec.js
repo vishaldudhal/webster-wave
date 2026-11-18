@@ -42,11 +42,10 @@ test("login, modules, multi-channel planning and mobile containment", async ({ p
   await expect(page.locator(".snapshot-metric.followups strong")).toHaveText(String(liveMetrics.followUps));
   await expect(page.locator("#notificationButton svg")).toBeVisible();
   await page.locator("#notificationButton").click();
-  await expect(page.getByRole("button", { name: /Daily briefing/ })).toBeVisible();
+  await expect(page.locator("#notificationsPopover").getByText("Notifications", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Daily briefing/ })).toHaveCount(0);
   await page.screenshot({ path: "test-results/wave-notifications.png" });
-  await page.getByRole("button", { name: /Daily briefing/ }).click();
-  await expect(page.getByRole("heading", { name: "Here’s the WAVE." })).toBeVisible();
-  await page.getByRole("button", { name: "Dismiss", exact: true }).click();
+  await page.locator("#notificationButton").click();
   await page.locator("#sidebarToggle").click();
   await expect(page.locator(".saas-shell")).toHaveClass(/sidebar-collapsed/);
   await expect(page.locator(".sidebar-brand .momentum-mark")).toBeVisible();
@@ -57,11 +56,12 @@ test("login, modules, multi-channel planning and mobile containment", async ({ p
   await page.screenshot({ path: "test-results/wave-overview.png", fullPage: true });
 
   await page.getByRole("button", { name: /New activity/ }).click();
+  await page.getByRole("button", { name: /Plan Content/ }).click();
+  await page.screenshot({ path: "test-results/wave-content-form.png", fullPage: true });
   await page.locator("#activityTitle").fill("Multi-channel launch proof");
-  await page.locator("#activityVertical").selectOption("Marketing");
   await page.locator('[data-publish-channel="LinkedIn"]').check();
   await page.locator('[data-publish-channel="YouTube"]').check();
-  await page.getByRole("button", { name: "Add activity", exact: true }).click();
+  await page.locator("#overlay").getByRole("button", { name: "Plan content", exact: true }).click();
 
   await page.getByRole("button", { name: /Planner/ }).click();
   await expect(page.getByText("Connected execution board")).toBeVisible();
@@ -70,27 +70,33 @@ test("login, modules, multi-channel planning and mobile containment", async ({ p
   const data = await page.evaluate(() => JSON.parse(localStorage.getItem("growth30.planner.v1")));
   const created = data.activities.filter((activity) => activity.title === "Multi-channel launch proof");
   expect(created).toHaveLength(1);
+  expect(created[0].kind).toBe("content");
+  expect(created[0].contentStatus).toBe("Planned");
+  expect(created[0].contentFormat).toBe("Social post");
   expect(created[0].publicationTargets.map((target) => target.channel).sort()).toEqual(["LinkedIn", "YouTube"]);
+  expect(created[0].publicationTargets.every((target) => target.status === "Planned")).toBeTruthy();
   await page.locator('.week-card:has([data-inline-title][value="Multi-channel launch proof"]):has([data-channel="LinkedIn"]) select').selectOption("Published");
   const published = await page.evaluate(() => JSON.parse(localStorage.getItem("growth30.planner.v1")).activities.find((activity) => activity.title === "Multi-channel launch proof"));
   expect(published.publicationTargets.find((target) => target.channel === "LinkedIn").status).toBe("Published");
   await page.screenshot({ path: "test-results/wave-planner.png", fullPage: true });
 
-  await page.getByRole("button", { name: /Activities/ }).click();
+  await page.getByRole("button", { name: "All Activities" }).click();
   await page.locator("#activitySearch").fill("launch proof");
   await expect(page.getByText("Multi-channel launch proof", { exact: true })).toBeVisible();
 
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Activities", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Planner", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "All Activities" })).toHaveClass(/active/);
   await expect(page.locator("#activitySearch")).toHaveValue("launch proof");
   await expect(page.getByText("Multi-channel launch proof", { exact: true })).toBeVisible();
   const dismissBriefing = page.getByRole("button", { name: "Dismiss", exact: true });
   if (await dismissBriefing.isVisible()) await dismissBriefing.click();
 
   await page.getByRole("button", { name: /Settings/ }).click();
-  await expect(page.getByRole("heading", { name: "Data backup & restore" })).toBeVisible();
+  await page.getByRole("button", { name: "Data Management" }).click();
+  await expect(page.getByRole("heading", { name: "Data Management" })).toBeVisible();
   await page.locator("#openDataTools").click();
-  await expect(page.getByRole("heading", { name: "Backup & restore", exact: true })).toBeVisible();
+  await expect(page.locator("#overlay").getByRole("heading", { name: "Backup & restore", exact: true })).toBeVisible();
   await page.locator("#overlay").getByRole("button", { name: "×" }).click();
   page.once("dialog", (dialog) => dialog.accept());
   await page.locator("#loadDemoData").click();
@@ -117,7 +123,7 @@ test("version 3 plans migrate without losing activities", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("Legacy activity", { exact: true }).first()).toBeVisible();
   const migrated = await page.evaluate(() => JSON.parse(localStorage.getItem("growth30.planner.v1")));
-  expect(migrated.schemaVersion).toBe(4);
+  expect(migrated.schemaVersion).toBe(5);
   expect(migrated.activities[0].publicationTargets).toEqual([{ channel: "LinkedIn", status: "Scheduled" }]);
 });
 
@@ -142,6 +148,35 @@ test("planner view, period and filters persist across reloads", async ({ page })
   await expect(page.locator("#ownerFilter")).toHaveValue("Aisha");
   await expect(page.locator("#statusFilter")).toHaveValue("In progress");
   await expect(page.locator(".calendar-panel h2")).toHaveText(visibleMonth);
+});
+
+test("contextual activity flow and categorized settings remain integration-ready", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("webster.wave.session.v1", "active"));
+  await page.goto("/");
+  const dismissBriefing = page.getByRole("button", { name: "Dismiss", exact: true });
+  if (await dismissBriefing.isVisible()) await dismissBriefing.click();
+
+  await page.getByRole("button", { name: /New activity/ }).click();
+  await page.getByRole("button", { name: /Plan an Activity/ }).click();
+  await expect(page.getByRole("heading", { name: "Plan an Activity" })).toBeVisible();
+  await expect(page.locator("#publishingSection")).toBeHidden();
+  await expect(page.locator(".additional-details")).not.toHaveAttribute("open", "");
+  await page.screenshot({ path: "test-results/wave-activity-form.png", fullPage: true });
+  await page.locator("#activityType").selectOption("Follow-up");
+  await expect(page.locator("#checklistEditor .check-edit")).toHaveCount(5);
+  await page.locator("#activityTitle").fill("Follow up after discovery call");
+  await page.locator("#overlay").getByRole("button", { name: "Plan activity", exact: true }).click();
+  const created = await page.evaluate(() => JSON.parse(localStorage.getItem("growth30.planner.v1")).activities.find((item) => item.title === "Follow up after discovery call"));
+  expect(created.kind).toBe("activity");
+  expect(created.publicationTargets).toEqual([]);
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  await expect(page.locator(".settings-nav button")).toHaveCount(7);
+  await page.getByRole("button", { name: "Integrations" }).click();
+  await expect(page.locator(".integration-card")).toHaveCount(6);
+  await expect(page.getByText("No connection is active.")).toBeVisible();
+  await expect(page.getByText("Connected", { exact: true })).toHaveCount(0);
+  await page.screenshot({ path: "test-results/wave-settings-integrations.png", fullPage: true });
 });
 
 test("typography remains readable and contained at 100% zoom", async ({ page }) => {
@@ -171,7 +206,7 @@ test("typography remains readable and contained at 100% zoom", async ({ page }) 
   expect(typeStyles.label.size).toBeGreaterThanOrEqual(11);
   expect(typeStyles.activityMeta.lineHeight).toBeGreaterThanOrEqual(typeStyles.activityMeta.size * 1.35);
 
-  for (const module of ["planner", "activities", "settings", "overview"]) {
+  for (const module of ["planner", "settings", "overview"]) {
     await page.locator(`[data-module="${module}"]`).click();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);

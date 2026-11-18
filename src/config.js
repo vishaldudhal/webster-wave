@@ -8,7 +8,26 @@ export const SESSION_KEY = "webster.wave.session.v1";
 export const UI_KEY = "webster.wave.ui.v1";
 export const MARKETING_CHANNELS = ["Instagram", "Facebook", "Twitter / X", "LinkedIn", "Blogs", "YouTube"];
 export const BLOG_TYPES = ["Life at Webster", "General Blog"];
-export const PUBLISHING_STATUSES = ["Idea", "Draft", "In review", "Scheduled", "Published"];
+export const CONTENT_LIFECYCLE = ["Planned", "Draft", "In Review", "Approved", "Scheduled", "Published"];
+export const PUBLISHING_STATUSES = CONTENT_LIFECYCLE;
+export const CONTENT_FORMATS = ["Social post", "Carousel", "Creative", "Reel", "Short", "Blog", "Video"];
+export const CONTENT_TEMPLATES = {
+  "Social post": ["Define the message", "Draft the copy", "Prepare the creative", "Review and approve", "Schedule publishing"],
+  Carousel: ["Define the narrative", "Outline the slides", "Write slide copy", "Design the carousel", "Review and approve", "Schedule publishing"],
+  Creative: ["Confirm the objective", "Write the brief", "Create the visual", "Review brand alignment", "Approve and export"],
+  Reel: ["Define the hook", "Write the script", "Record footage", "Edit and caption", "Review and approve", "Schedule publishing"],
+  Short: ["Define the hook", "Write the script", "Record footage", "Edit and caption", "Review and approve", "Schedule publishing"],
+  Blog: ["Define the angle and keyword", "Create the outline", "Write the draft", "Edit and review", "Add media and metadata", "Schedule publishing"],
+  Video: ["Define the concept", "Write the script", "Plan the shoot", "Record footage", "Edit the video", "Review and approve", "Schedule publishing"],
+};
+export const BUSINESS_ACTIVITY_TEMPLATES = {
+  Meeting: ["Confirm participants and objective", "Prepare agenda and context", "Complete the meeting", "Record decisions", "Assign next actions"],
+  Call: ["Review contact context", "Prepare talking points", "Complete the call", "Record notes", "Set the next action"],
+  Outreach: ["Research the contact", "Personalise the message", "Send outreach", "Schedule follow-up", "Record the response"],
+  Research: ["Define the research question", "Collect reliable sources", "Summarise findings", "Record recommendations"],
+  "Follow-up": ["Review the previous interaction", "Prepare a relevant follow-up", "Send or complete follow-up", "Record the response", "Set the next action"],
+  "General Task": ["Define the expected outcome", "Complete the work", "Review the result", "Record the next action"],
+};
 
 export const VERTICAL_TEMPLATES = {
   "Local Business Development": ["Shortlist the business", "Complete research", "Establish contact", "Complete visit or meeting", "Send follow-up", "Record next step"],

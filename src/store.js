@@ -1,4 +1,4 @@
-import { DEFAULT_OWNER, DEFAULT_VERTICALS, MARKETING_CHANNELS, MAX_DAILY_OPEN, PRIORITIES, PUBLISHING_STATUSES, STORAGE_KEY, VERTICAL_TEMPLATES } from "./config.js";
+import { BUSINESS_ACTIVITY_TEMPLATES, CONTENT_LIFECYCLE, CONTENT_TEMPLATES, DEFAULT_OWNER, DEFAULT_VERTICALS, MARKETING_CHANNELS, MAX_DAILY_OPEN, PRIORITIES, STORAGE_KEY, VERTICAL_TEMPLATES } from "./config.js";
 import { dateRange, firstOfMonth, lastOfMonth, parseDate, shiftDate, shiftMonth, today, toLocalDate, weekdayNumber } from "./dates.js";
 
 export const uid = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
@@ -10,7 +10,11 @@ const cleanText = (value) => String(value || "").trim();
 const normalizeItem = (item) => ({ id: item?.id || uid(), label: cleanText(item?.label) || "Checklist item", done: Boolean(item?.done) });
 const normalizeAttachment = (file) => ({ id: file?.id || uid(), name: cleanText(file?.name) || "Attachment", type: cleanText(file?.type), size: Number(file?.size || 0), data: String(file?.data || "") });
 const normalizeMarketingChannel = (value) => ({ Blog: "Blogs", "Life at Webster Blog": "Blogs", "General Blog": "Blogs", Twitter: "Twitter / X", X: "Twitter / X" }[cleanText(value)] || cleanText(value));
-const normalizePublicationTarget = (target) => ({ channel: normalizeMarketingChannel(target?.channel), status: PUBLISHING_STATUSES.includes(target?.status) ? target.status : "Scheduled" });
+const normalizeLifecycle = (value, fallback = "Planned") => {
+  const migrated = value === "Idea" ? "Planned" : value === "In review" ? "In Review" : value;
+  return CONTENT_LIFECYCLE.includes(migrated) ? migrated : fallback;
+};
+const normalizePublicationTarget = (target) => ({ channel: normalizeMarketingChannel(target?.channel), status: normalizeLifecycle(target?.status, "Scheduled") });
 
 export function normalizeActivity(activity = {}) {
   const date = activity.date || today();
@@ -28,6 +32,9 @@ export function normalizeActivity(activity = {}) {
     platform: cleanText(activity.platform),
     activityType: cleanText(activity.activityType),
     category: cleanText(activity.category),
+    kind: activity.kind === "content" || (activity.vertical === "Marketing" && (activity.publicationTargets?.length || activity.contentFormat)) ? "content" : "activity",
+    contentFormat: cleanText(activity.contentFormat),
+    contentStatus: normalizeLifecycle(activity.contentStatus || (activity.manualDone ? "Published" : "Planned")),
     blogType: cleanText(activity.blogType) || (activity.platform === "Life at Webster Blog" ? "Life at Webster" : activity.platform === "General Blog" ? "General Blog" : ""),
     topic: cleanText(activity.topic),
     additionalDetails: cleanText(activity.additionalDetails),
@@ -64,7 +71,8 @@ function normalizeSchedule(schedule = {}) {
 
 function templateFrom(activity) {
   return {
-    title: activity.title, vertical: activity.vertical, owner: activity.owner, priority: activity.priority,
+    title: activity.title, vertical: activity.vertical, owner: activity.owner, priority: activity.priority, kind: activity.kind,
+    contentFormat: activity.contentFormat, contentStatus: activity.contentStatus,
     platform: activity.platform, activityType: activity.activityType, category: activity.category, blogType: activity.blogType,
     topic: activity.topic, additionalDetails: activity.additionalDetails, notes: activity.notes,
     resources: activity.resources, outcome: "", followUpDate: "", followUpDone: false,
@@ -122,7 +130,7 @@ function createDemoState(profile = { name: DEFAULT_OWNER, email: "", role: "Busi
     make(-3, "Send the quarterly care-plan review", "Past Client Development", { completed: 6, platform: "Email", activityType: "Review", category: "Retention", outcome: "Renewal confirmed for another quarter." }),
   ];
   const recurrence = normalizeSchedule({ id: recurrenceId, frequency: "weekly", startDate: recurringDate, template: { title: "Friday pipeline and follow-up review", vertical: "Existing Network", owner: team[0], priority: "Medium", platform: "Meeting", activityType: "Review", category: "Relationship", additionalDetails: "Review every open conversation and set the next action.", fixed: true, checklist: VERTICAL_TEMPLATES["Existing Network"] } });
-  return { schemaVersion: 4, activities, recurrences: [recurrence], team, verticals: [...DEFAULT_VERTICALS], profile: { name: profile.name || DEFAULT_OWNER, email: profile.email || "", role: profile.role || "Business Development" }, settings: { workingDays: [1, 2, 3, 4, 5], holidays: [], reminderEnabled: true, reminderTime: "10:00" }, templates: { ...VERTICAL_TEMPLATES } };
+  return { schemaVersion: 5, activities, recurrences: [recurrence], team, verticals: [...DEFAULT_VERTICALS], profile: { name: profile.name || DEFAULT_OWNER, email: profile.email || "", role: profile.role || "Business Development", avatar: profile.avatar || "" }, settings: { workingDays: [1, 2, 3, 4, 5], holidays: [], reminderEnabled: true, reminderTime: "10:00", defaultPlannerView: "week", timezone: "Asia/Kolkata", autoReschedule: true, notificationFollowUps: true, notificationOverdue: true, notificationReviews: true, notificationPublishing: true }, templates: { ...VERTICAL_TEMPLATES }, activityTemplates: { ...BUSINESS_ACTIVITY_TEMPLATES }, contentTemplates: { ...CONTENT_TEMPLATES }, memberDetails: {} };
 }
 
 function readState() {
@@ -132,14 +140,17 @@ function readState() {
       const activities = stored.activities.map(normalizeActivity);
       return {
         ...stored,
-        schemaVersion: 4,
+        schemaVersion: 5,
         activities,
         recurrences: Array.isArray(stored.recurrences) ? stored.recurrences.map(normalizeSchedule) : [],
         team: Array.from(new Set([DEFAULT_OWNER, ...(stored.team || []), ...activities.map((item) => item.owner).filter(Boolean)])),
         verticals: Array.from(new Set([...DEFAULT_VERTICALS, ...(stored.verticals || []), ...activities.map((item) => item.vertical).filter(Boolean)])),
-        profile: { name: DEFAULT_OWNER, email: "", role: "Business Development", ...(stored.profile || {}) },
-        settings: { workingDays: [1, 2, 3, 4, 5], holidays: [], reminderEnabled: true, reminderTime: "10:00", ...(stored.settings || {}) },
+        profile: { name: DEFAULT_OWNER, email: "", role: "Business Development", avatar: "", ...(stored.profile || {}) },
+        settings: { workingDays: [1, 2, 3, 4, 5], holidays: [], reminderEnabled: true, reminderTime: "10:00", defaultPlannerView: "week", timezone: "Asia/Kolkata", autoReschedule: true, notificationFollowUps: true, notificationOverdue: true, notificationReviews: true, notificationPublishing: true, ...(stored.settings || {}) },
         templates: { ...VERTICAL_TEMPLATES, ...(stored.templates || {}) },
+        activityTemplates: { ...BUSINESS_ACTIVITY_TEMPLATES, ...(stored.activityTemplates || {}) },
+        contentTemplates: { ...CONTENT_TEMPLATES, ...(stored.contentTemplates || {}) },
+        memberDetails: stored.memberDetails && typeof stored.memberDetails === "object" ? stored.memberDetails : {},
       };
     }
   } catch { /* Fall through to starter data. */ }
@@ -151,18 +162,21 @@ export function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)
 
 function normalizedState(source) {
   if (!source || typeof source !== "object" || !Array.isArray(source.activities)) throw new Error("This file does not contain a valid WAVE plan.");
-  if (Number(source.schemaVersion || 1) > 4) throw new Error("This backup was created by a newer version of WAVE.");
+  if (Number(source.schemaVersion || 1) > 5) throw new Error("This backup was created by a newer version of WAVE.");
   if (source.recurrences != null && !Array.isArray(source.recurrences)) throw new Error("The recurring schedule data is invalid.");
   const activities = source.activities.map(normalizeActivity);
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     activities,
     recurrences: (source.recurrences || []).map(normalizeSchedule),
     team: Array.from(new Set([DEFAULT_OWNER, ...(Array.isArray(source.team) ? source.team : []), ...activities.map((item) => item.owner).filter(Boolean)])),
     verticals: Array.from(new Set([...DEFAULT_VERTICALS, ...(Array.isArray(source.verticals) ? source.verticals : []), ...activities.map((item) => item.vertical).filter(Boolean)])),
-    profile: { name: DEFAULT_OWNER, email: "", role: "Business Development", ...(source.profile || {}) },
-    settings: { workingDays: [1, 2, 3, 4, 5], holidays: [], reminderEnabled: true, reminderTime: "10:00", ...(source.settings || {}) },
+    profile: { name: DEFAULT_OWNER, email: "", role: "Business Development", avatar: "", ...(source.profile || {}) },
+    settings: { workingDays: [1, 2, 3, 4, 5], holidays: [], reminderEnabled: true, reminderTime: "10:00", defaultPlannerView: "week", timezone: "Asia/Kolkata", autoReschedule: true, notificationFollowUps: true, notificationOverdue: true, notificationReviews: true, notificationPublishing: true, ...(source.settings || {}) },
     templates: { ...VERTICAL_TEMPLATES, ...(source.templates || {}) },
+    activityTemplates: { ...BUSINESS_ACTIVITY_TEMPLATES, ...(source.activityTemplates || {}) },
+    contentTemplates: { ...CONTENT_TEMPLATES, ...(source.contentTemplates || {}) },
+    memberDetails: source.memberDetails && typeof source.memberDetails === "object" ? source.memberDetails : {},
   };
 }
 
@@ -171,7 +185,7 @@ export function createBackup() {
     format: "webster-wave-backup",
     backupVersion: 1,
     exportedAt: new Date().toISOString(),
-    appVersion: "1.0.0",
+    appVersion: "1.1.0",
     data: JSON.parse(JSON.stringify(state)),
   };
 }
@@ -189,6 +203,9 @@ export function loadDemoData() {
   const demo = createDemoState(state.profile);
   demo.settings = { ...state.settings };
   demo.templates = { ...VERTICAL_TEMPLATES, ...state.templates };
+  demo.activityTemplates = { ...BUSINESS_ACTIVITY_TEMPLATES, ...state.activityTemplates };
+  demo.contentTemplates = { ...CONTENT_TEMPLATES, ...state.contentTemplates };
+  demo.memberDetails = { ...state.memberDetails };
   for (const key of Object.keys(state)) delete state[key];
   Object.assign(state, demo);
   save();
@@ -253,6 +270,7 @@ function nextAvailableWorkingDay(activity) {
 }
 
 export function carryForward() {
+  if (state.settings.autoReschedule === false) return [];
   let changed = false;
   for (const activity of state.activities) {
     if (activity.fixed || activity.date >= today() || progress(activity) === 100) continue;
