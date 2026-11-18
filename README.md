@@ -1,4 +1,4 @@
-# Webster WAVE 1.0
+# wave 1.0
 
 **Webster Actions, Visibility & Execution**
 
@@ -11,6 +11,7 @@ A premium, connected business development and marketing command centre for plann
 
 - Daily command overview for today's work, pending items, follow-ups, and completions
 - Branded local workspace login, collapsible navigation, notifications, and profile controls
+- Independent Momentum brand identity with a lowercase wave wordmark and three-shape progress mark
 - Dedicated Overview, Planner, Activities, and Settings modules backed by one shared data model
 - Realistic 23-activity demo workspace for new browsers plus a protected Settings loader for existing workspaces
 - Synchronized monthly calendar and Monday-to-Sunday spreadsheet planner

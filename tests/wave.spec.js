@@ -1,12 +1,30 @@
 import { expect, test } from "@playwright/test";
 
 test("login, modules, multi-channel planning and mobile containment", async ({ page }) => {
+  const html = await (await page.request.get("/")).text();
+  expect(html).toContain('class="brand-loader"');
+  expect((await page.request.get("/favicon.svg")).ok()).toBeTruthy();
+  expect((await page.request.get("/brand/wave-momentum-mark.svg")).ok()).toBeTruthy();
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+  await expect(page.locator(".login-brand .wave-lockup")).toHaveAttribute("aria-label", "wave");
+  await expect(page.locator(".brand-mark")).toHaveCount(0);
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", "/favicon.svg");
   await page.screenshot({ path: "test-results/wave-login.png", fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".login-mobile-brand img")).toBeVisible();
+  await page.screenshot({ path: "test-results/wave-login-mobile.png", fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.locator("#loginName").fill("Vishal Dudhal");
-  await page.getByRole("button", { name: /Continue to WAVE/ }).click();
+  await page.getByRole("button", { name: /Continue to wave/i }).click();
   await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
+  await expect(page.locator(".sidebar-brand .momentum-mark")).toBeVisible();
+  await expect(page.locator(".sidebar-brand .brand-copy strong")).toHaveText("wave");
+  await page.locator("#sidebarToggle").click();
+  await expect(page.locator(".saas-shell")).toHaveClass(/sidebar-collapsed/);
+  await expect(page.locator(".sidebar-brand .momentum-mark")).toBeVisible();
+  await page.screenshot({ path: "test-results/wave-sidebar-collapsed.png", fullPage: true });
+  await page.locator("#sidebarToggle").click();
   await page.screenshot({ path: "test-results/wave-overview.png", fullPage: true });
 
   await page.getByRole("button", { name: /New activity/ }).click();
