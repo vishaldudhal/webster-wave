@@ -143,3 +143,43 @@ test("planner view, period and filters persist across reloads", async ({ page })
   await expect(page.locator("#statusFilter")).toHaveValue("In progress");
   await expect(page.locator(".calendar-panel h2")).toHaveText(visibleMonth);
 });
+
+test("typography remains readable and contained at 100% zoom", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("webster.wave.session.v1", "active"));
+  await page.goto("/");
+  const dismissBriefing = page.getByRole("button", { name: "Dismiss", exact: true });
+  if (await dismissBriefing.isVisible()) await dismissBriefing.click();
+
+  const typeStyles = await page.evaluate(() => {
+    const read = (selector) => {
+      const style = getComputedStyle(document.querySelector(selector));
+      return { size: parseFloat(style.fontSize), lineHeight: parseFloat(style.lineHeight), weight: Number(style.fontWeight) };
+    };
+    return {
+      page: read(".page-heading h1"),
+      navigation: read(".side-nav button"),
+      activityTitle: read(".focus-copy > strong"),
+      activityMeta: read(".focus-copy > small"),
+      label: read(".snapshot-metric span"),
+    };
+  });
+  expect(typeStyles.page.size).toBeGreaterThanOrEqual(24);
+  expect(typeStyles.navigation.size).toBeGreaterThanOrEqual(13);
+  expect(typeStyles.activityTitle.size).toBeGreaterThanOrEqual(13);
+  expect(typeStyles.activityTitle.weight).toBeGreaterThanOrEqual(500);
+  expect(typeStyles.activityMeta.size).toBeGreaterThanOrEqual(11);
+  expect(typeStyles.label.size).toBeGreaterThanOrEqual(11);
+  expect(typeStyles.activityMeta.lineHeight).toBeGreaterThanOrEqual(typeStyles.activityMeta.size * 1.35);
+
+  for (const module of ["planner", "activities", "settings", "overview"]) {
+    await page.locator(`[data-module="${module}"]`).click();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  const mobileOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(mobileOverflow).toBeLessThanOrEqual(1);
+  expect(await page.evaluate(() => window.devicePixelRatio)).toBe(1);
+});

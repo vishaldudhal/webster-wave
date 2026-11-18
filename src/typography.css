@@ -1,0 +1,250 @@
+/*
+ * WAVE typography system
+ * Loaded after the component stylesheet so typography remains independently
+ * auditable without changing component geometry, colour, or behaviour.
+ */
+
+:root {
+  --type-caption: 11px;
+  --type-label: 12px;
+  --type-body: 13px;
+  --type-subheading: 15px;
+  --type-heading: 20px;
+  --type-page: 24px;
+  --text-secondary: #58665d;
+}
+
+body {
+  font-size: var(--type-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select,
+textarea {
+  line-height: 1.4;
+}
+
+h1,
+h2,
+h3,
+strong {
+  text-wrap: pretty;
+}
+
+/* Shared hierarchy and controls */
+.page-heading h1 { font-size: var(--type-page); font-weight: 600; line-height: 1.2; letter-spacing: -.55px; }
+.page-heading p,
+.subtitle,
+.modal-description { color: var(--text-secondary); font-size: var(--type-label); line-height: 1.55; }
+.panel-header h2,
+.modal h2,
+.activity-drawer h2 { font-weight: 600; line-height: 1.28; }
+.panel-header h2 { font-size: var(--type-heading); }
+.modal h2,
+.activity-drawer h2 { font-size: 23px; }
+.eyebrow,
+.section-kicker,
+.date-chip {
+  font-size: var(--type-caption);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: .035em;
+  text-transform: none;
+}
+.button { font-size: var(--type-label); font-weight: 600; line-height: 1.35; }
+.small { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.5; }
+.field { font-size: var(--type-label); font-weight: 600; line-height: 1.4; }
+.field input,
+.field select,
+.field textarea,
+.check-edit input { font-size: var(--type-body); font-weight: 400; line-height: 1.5; }
+.field-help { font-size: var(--type-caption); line-height: 1.5; }
+.inline-check { font-size: var(--type-label); }
+.inline-check small { font-size: var(--type-caption); }
+.section-title h3 { font-size: var(--type-body); font-weight: 600; }
+.section-title span { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.45; }
+.text-button,
+.new-check,
+.clear-filters,
+.file-input { font-size: var(--type-label); }
+.empty-state,
+.module-empty { color: var(--text-secondary); font-size: var(--type-label); line-height: 1.55; }
+.empty-state strong,
+.module-empty strong { font-size: var(--type-body); font-weight: 600; }
+.module-empty span { font-size: var(--type-caption); }
+
+/* Product shell and navigation */
+.brand-copy strong { font-size: 20px; font-weight: 600; line-height: 1.1; }
+.brand-copy span { color: #aec2b7; font-size: var(--type-caption); font-weight: 500; line-height: 1.35; letter-spacing: .02em; }
+.side-nav button { font-size: var(--type-body); font-weight: 600; line-height: 1.4; }
+.sidebar-collapsed .side-nav button::after { font-size: var(--type-label); line-height: 1.35; }
+.workspace-badge > span { font-size: var(--type-caption); }
+.workspace-badge strong { font-size: var(--type-label); font-weight: 600; }
+.workspace-badge small { color: #aec2b7; font-size: var(--type-caption); }
+.profile-button > span { font-size: var(--type-caption); }
+.profile-button strong { font-size: var(--type-label); font-weight: 600; }
+.profile-button small { color: var(--text-secondary); font-size: var(--type-caption); }
+.profile-menu button { font-size: var(--type-label); }
+.icon-action b { font-size: 10px; font-weight: 700; line-height: 1; }
+.notifications-popover header strong { font-size: var(--type-body); }
+.notifications-popover header span,
+.notifications-popover small { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.45; }
+.notifications-popover strong,
+.notifications-popover > .briefing-entry span strong { font-size: var(--type-label); line-height: 1.4; }
+
+/* Login */
+.login-brand > .brand-endorsement,
+.login-mobile-brand > .brand-endorsement,
+.login-kicker { font-size: var(--type-caption); line-height: 1.45; letter-spacing: .07em; }
+.login-promise p { font-size: 15px; line-height: 1.7; }
+.login-proof span,
+.login-footer { font-size: var(--type-caption); line-height: 1.45; }
+.login-footer strong { font-size: var(--type-body); }
+.login-card h2 { font-weight: 600; line-height: 1.25; }
+.login-card > p { color: var(--text-secondary); font-size: var(--type-label); line-height: 1.55; }
+.login-card > small { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.55; }
+
+/* Overview */
+.snapshot-heading h2 { font-size: var(--type-heading); font-weight: 600; line-height: 1.3; }
+.snapshot-heading p { color: var(--text-secondary); font-size: var(--type-label); line-height: 1.5; }
+.snapshot-progress strong { font-size: var(--type-label); font-weight: 600; }
+.snapshot-progress small { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.45; }
+.snapshot-metric span { color: var(--text-secondary); font-size: var(--type-caption); font-weight: 600; line-height: 1.4; }
+.snapshot-metric strong { font-weight: 600; line-height: 1.1; }
+.dashboard-panel-head h3 { font-size: var(--type-subheading); font-weight: 600; line-height: 1.35; }
+.dashboard-panel-head > span,
+.dashboard-panel-head > button { font-size: var(--type-caption); line-height: 1.4; }
+.dashboard-panel-head > span { color: var(--text-secondary); }
+.focus-ring b { font-size: 10px; }
+.focus-copy > strong { font-size: var(--type-body); font-weight: 600; line-height: 1.4; }
+.focus-copy > small,
+.focus-owner small { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.4; }
+.focus-owner > i { font-size: 10px; }
+.focus-empty strong { font-size: var(--type-body); }
+.focus-empty small { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.45; }
+.momentum-day > strong,
+.momentum-day > span { font-size: 10px; font-weight: 600; line-height: 1.25; }
+.momentum-day > strong { color: #68736b; }
+.momentum-day > span { color: var(--text-secondary); text-transform: none; }
+.outcome-grid strong { font-size: 18px; font-weight: 600; }
+.outcome-grid small { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.35; }
+.upcoming-compact time strong { font-size: var(--type-body); }
+.upcoming-compact time span { color: var(--text-secondary); font-size: 10px; font-weight: 600; line-height: 1.2; letter-spacing: .02em; }
+.upcoming-compact button > span strong { font-size: var(--type-label); font-weight: 600; line-height: 1.4; }
+.upcoming-compact button > span small,
+.compact-empty { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.4; }
+.vertical-legend b { font-size: var(--type-caption); font-weight: 600; }
+.vertical-legend small { color: var(--text-secondary); font-size: 10px; }
+
+/* Planner */
+.planner-filters button,
+.view-switch button { font-size: var(--type-label); font-weight: 600; }
+.filters label,
+.owner-filter { font-size: var(--type-caption); line-height: 1.35; letter-spacing: .02em; text-transform: none; }
+.filters select,
+.owner-filter select { font-size: var(--type-label); }
+.planner-corner,
+.planner-day strong { font-size: var(--type-caption); line-height: 1.35; letter-spacing: .02em; text-transform: none; }
+.planner-day span { color: var(--text-secondary); font-size: var(--type-caption); }
+.planner-row-label i { font-size: 10px; }
+.planner-row-label strong { font-size: var(--type-label); font-weight: 600; }
+.planner-row-label small { color: var(--text-secondary); font-size: var(--type-caption); }
+.week-card input { font-size: var(--type-label); font-weight: 600; }
+.week-card button { font-size: var(--type-label); }
+.week-card small,
+.week-card select,
+.week-status { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.35; }
+.weekday { color: #68736b; font-size: var(--type-caption); letter-spacing: .035em; }
+.day-number { font-size: var(--type-label); }
+.month-tag,
+.day-count,
+.day-summary,
+.day-empty,
+.legend,
+.day-progress > div:first-child { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.4; }
+.day-count b { font-size: var(--type-label); }
+.activity-title { font-size: var(--type-body); font-weight: 600; line-height: 1.45; }
+.activity-meta { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.4; }
+.owner-avatar,
+.carried-tag,
+.followup-tag,
+.status-pill,
+.progress-value { font-size: 10px; line-height: 1.35; }
+.status-pill { letter-spacing: .02em; text-transform: none; }
+
+/* Activities */
+.search-box input { font-size: var(--type-body); }
+.activity-table-head { font-size: var(--type-caption); line-height: 1.35; letter-spacing: .025em; text-transform: none; }
+.activity-table-row { font-size: var(--type-label); line-height: 1.45; }
+.activity-name strong { font-size: var(--type-body); font-weight: 600; }
+.activity-name small { color: var(--text-secondary); font-size: var(--type-caption); }
+.avatar-mini { font-size: 10px; }
+.activity-table-row b { font-size: var(--type-caption); }
+.table-status { font-size: 10px; line-height: 1.3; letter-spacing: .01em; text-transform: none; }
+.weekly-table th { font-size: var(--type-caption); letter-spacing: .025em; text-transform: none; }
+.weekly-table td { font-size: var(--type-label); line-height: 1.5; }
+.day-cell strong { font-size: var(--type-body); }
+.day-cell span,
+.topic-cell small,
+.weekly-table td > small,
+.weekly-summary,
+.table-footer { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.45; }
+.day-cell em,
+.topic-cell strong,
+.empty-week-cell button { font-size: var(--type-caption); }
+
+/* Settings, activity details, and data */
+.settings-card h3 { font-size: var(--type-subheading); font-weight: 600; line-height: 1.35; }
+.settings-card header p { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.5; }
+.settings-list strong,
+.template-grid strong,
+.settings-toggle strong { font-size: var(--type-label); font-weight: 600; }
+.you-tag,
+.template-grid small,
+.settings-toggle small,
+.day-toggles span,
+.holiday-list > span,
+.data-facts { font-size: var(--type-caption); line-height: 1.4; }
+.inline-add input,
+.publish-channel label,
+.publish-channel select,
+.publication-list strong,
+.publication-list i { font-size: var(--type-label); }
+.demo-settings > p { color: var(--text-secondary); font-size: var(--type-label); line-height: 1.65; }
+.detail-grid span,
+.context-card span { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.4; letter-spacing: .025em; text-transform: none; }
+.detail-grid strong,
+.context-card strong { font-size: var(--type-label); font-weight: 600; }
+.context-card p,
+.notes-copy,
+.empty-copy,
+.resource-list a,
+.resource-list span { font-size: var(--type-label); line-height: 1.65; }
+.progress-hero > div:first-child,
+.check-row,
+.followup-check strong { font-size: var(--type-label); }
+.progress-hero small,
+.followup-check small,
+.activity-history p { color: var(--text-secondary); font-size: var(--type-caption); line-height: 1.5; }
+.priority-badge { font-size: 10px; line-height: 1.35; letter-spacing: .02em; text-transform: none; }
+.briefing-focus > span { font-size: var(--type-caption); letter-spacing: .025em; text-transform: none; }
+.briefing-focus strong,
+.briefing-callout strong { font-size: var(--type-label); }
+.briefing-focus small,
+.briefing-callout span { font-size: var(--type-caption); line-height: 1.45; }
+.data-action strong { font-size: var(--type-body); }
+.data-action p,
+.restore-preview span { color: var(--text-secondary); font-size: var(--type-label); line-height: 1.6; }
+.attachment-list strong,
+.attachment-editor strong { font-size: var(--type-label); }
+.attachment-list small,
+.attachment-editor small,
+.form-error { font-size: var(--type-caption); line-height: 1.45; }
+
+@media (max-width: 860px) {
+  .activity-table-row > span::before { font-size: var(--type-caption); line-height: 1.35; }
+}

@@ -1,4 +1,5 @@
 import "./styles.css";
+import "./typography.css";
 import { ACTIVITY_TYPE_SUGGESTIONS, BLOG_TYPES, CATEGORY_SUGGESTIONS, DEFAULT_OWNER, DISMISS_KEY, MARKETING_CHANNELS, PLATFORM_SUGGESTIONS, PRIORITIES, PUBLISHING_STATUSES, SESSION_KEY, STATUSES, UI_KEY, VERTICAL_TEMPLATES } from "./config.js";
 import { daysInMonth, endOfWeek, firstOfMonth, lastOfMonth, monthTitle, niceDate, parseDate, shiftDate, shiftMonth, startOfWeek, today, weekDay } from "./dates.js";
 import { addActivity, carryForward, createBackup, deleteActivity, getSchedule, isFollowUpDue, loadDemoData, progress, restoreBackup, save, state, statusOf, syncRecurrences, uid, updateActivity } from "./store.js";
