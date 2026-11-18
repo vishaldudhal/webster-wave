@@ -9,7 +9,7 @@ A premium, connected business development and marketing command centre for plann
 
 ## Included
 
-- Daily command overview for today's work, pending items, follow-ups, and completions
+- Visual-first Overview with a consolidated live daily snapshot, interactive focus list, weekly momentum, outcome metrics, upcoming work, and vertical balance
 - Branded local workspace login, collapsible navigation, notifications, and profile controls
 - Independent Momentum brand identity with a lowercase wave wordmark and three-shape progress mark
 - Dedicated Overview, Planner, Activities, and Settings modules backed by one shared data model

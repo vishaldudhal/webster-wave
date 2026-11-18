@@ -20,9 +20,38 @@ test("login, modules, multi-channel planning and mobile containment", async ({ p
   await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
   await expect(page.locator(".sidebar-brand .momentum-mark")).toBeVisible();
   await expect(page.locator(".sidebar-brand .brand-copy strong")).toHaveText("wave");
+  await expect(page.locator("#viewRoot").getByRole("button", { name: /Add activity/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Open planner", exact: true })).toHaveCount(0);
+  await expect(page.locator(".app-main > .footer")).toHaveCount(0);
+  const liveMetrics = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem("growth30.planner.v1"));
+    const current = new Date();
+    const date = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}-${String(current.getDate()).padStart(2, "0")}`;
+    const progress = (activity) => activity.manualDone ? 100 : activity.items.length ? Math.round(activity.items.filter((item) => item.done).length / activity.items.length * 100) : 0;
+    const todayItems = data.activities.filter((activity) => activity.date === date);
+    return {
+      planned: todayItems.length,
+      remaining: todayItems.filter((activity) => progress(activity) < 100).length,
+      completed: todayItems.filter((activity) => progress(activity) === 100).length,
+      followUps: data.activities.filter((activity) => activity.followUpDate && activity.followUpDate <= date && !activity.followUpDone).length,
+    };
+  });
+  await expect(page.locator(".snapshot-metric.calendar strong")).toHaveText(String(liveMetrics.planned));
+  await expect(page.locator(".snapshot-metric.remaining strong")).toHaveText(String(liveMetrics.remaining));
+  await expect(page.locator(".snapshot-metric.completed strong")).toHaveText(String(liveMetrics.completed));
+  await expect(page.locator(".snapshot-metric.followups strong")).toHaveText(String(liveMetrics.followUps));
+  await expect(page.locator("#notificationButton svg")).toBeVisible();
+  await page.locator("#notificationButton").click();
+  await expect(page.getByRole("button", { name: /Daily briefing/ })).toBeVisible();
+  await page.screenshot({ path: "test-results/wave-notifications.png" });
+  await page.getByRole("button", { name: /Daily briefing/ }).click();
+  await expect(page.getByRole("heading", { name: "Here’s the WAVE." })).toBeVisible();
+  await page.getByRole("button", { name: "Dismiss", exact: true }).click();
   await page.locator("#sidebarToggle").click();
   await expect(page.locator(".saas-shell")).toHaveClass(/sidebar-collapsed/);
   await expect(page.locator(".sidebar-brand .momentum-mark")).toBeVisible();
+  await expect(page.locator('[data-module="planner"]')).toHaveAttribute("data-tooltip", "Planner");
+  await page.waitForTimeout(250);
   await page.screenshot({ path: "test-results/wave-sidebar-collapsed.png", fullPage: true });
   await page.locator("#sidebarToggle").click();
   await page.screenshot({ path: "test-results/wave-overview.png", fullPage: true });
@@ -73,6 +102,8 @@ test("login, modules, multi-channel planning and mobile containment", async ({ p
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: "test-results/wave-mobile-viewport.png" });
   await page.screenshot({ path: "test-results/wave-mobile.png", fullPage: true });
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);

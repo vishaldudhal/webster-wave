@@ -57,6 +57,18 @@ const statusClass = (activity) => statusOf(activity).toLowerCase().replace(" ", 
 const isCarried = (activity) => activity.history.some((entry) => entry.type === "carried" || entry.from);
 const momentumMark = (className = "momentum-mark") => `<img class="${className}" src="/brand/wave-momentum-mark.svg" alt=""/>`;
 const momentumLockup = () => `<span class="wave-lockup" role="img" aria-label="wave">${momentumMark()}<strong>wave</strong></span>`;
+const ICON_PATHS = {
+  overview: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
+  planner: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
+  activities: '<circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.12.36.33.7.6 1 .3.28.68.42 1.1.4H21v4h-.09c-.42-.02-.8.12-1.1.4-.28.3-.48.64-.6 1Z"/>',
+  bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/>',
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  chevronLeft: '<path d="m15 18-6-6 6-6"/>',
+  chevronRight: '<path d="m9 18 6-6-6-6"/>',
+  arrowRight: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+};
+const icon = (name, className = "") => `<svg class="${className}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] || ""}</svg>`;
 
 function filteredActivities() {
   return state.activities.filter((activity) => {
@@ -92,17 +104,18 @@ function render() {
   if (localStorage.getItem(SESSION_KEY) !== "active") { renderLogin(); return; }
   ensureVisibleRecurrences();
   const notifications = notificationItems();
-  const moduleTitles = { overview: ["Overview", `Welcome back, ${state.profile.name.split(" ")[0] || "there"}. Here’s today’s WAVE.`], planner: ["Planner", "Plan once. Execute everywhere."], activities: ["Activities", "Every business development and marketing action in one place."], settings: ["Settings", "Configure your workspace, team and planning rules."] };
+  const briefingMetrics = commandMetrics();
+  const moduleTitles = { overview: ["Overview", `${weekDay(today())}, ${niceDate(today(), { year: "numeric" })} · Live execution snapshot`], planner: ["Planner", "Plan once. Execute everywhere."], activities: ["Activities", "Every business development and marketing action in one place."], settings: ["Settings", "Configure your workspace, team and planning rules."] };
   const [title, description] = moduleTitles[activeModule];
   app.innerHTML = `<div class="saas-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}">
-    <aside class="sidebar" id="sidebar"><div class="sidebar-brand">${momentumMark()}<div class="brand-copy"><strong>wave</strong><span>by Webster</span></div><button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">${sidebarCollapsed ? "›" : "‹"}</button></div>
-      <nav class="side-nav">${[["overview","⌂","Overview"],["planner","▦","Planner"],["activities","✓","Activities"],["settings","⚙","Settings"]].map(([key,icon,label]) => `<button class="${activeModule === key ? "active" : ""}" data-module="${key}"><i>${icon}</i><span>${label}</span></button>`).join("")}</nav>
+    <aside class="sidebar" id="sidebar"><div class="sidebar-brand">${momentumMark()}<div class="brand-copy"><strong>wave</strong><span>by Webster</span></div><button class="sidebar-toggle" id="sidebarToggle" aria-label="${sidebarCollapsed ? "Expand" : "Collapse"} sidebar">${icon(sidebarCollapsed ? "chevronRight" : "chevronLeft")}</button></div>
+      <nav class="side-nav" aria-label="Primary navigation">${[["overview","Overview"],["planner","Planner"],["activities","Activities"],["settings","Settings"]].map(([key,label]) => `<button class="${activeModule === key ? "active" : ""}" data-module="${key}" data-tooltip="${label}" aria-label="${label}" title="${label}">${icon(key, "nav-icon")}<span>${label}</span></button>`).join("")}</nav>
       <div class="sidebar-foot"><div class="workspace-badge"><span>WS</span><div><strong>Webster Solutions</strong><small>Private workspace</small></div></div></div>
     </aside>
-    <div class="app-main"><header class="topbar"><button class="mobile-menu" id="mobileMenu">☰</button><div class="page-heading"><h1>${title}</h1><p>${description}</p></div><div class="top-actions"><button class="icon-action" id="notificationButton" aria-label="Notifications">♢${notifications.length ? `<b>${notifications.length}</b>` : ""}</button><button class="button primary" id="addTop">＋ New activity</button><div class="profile-wrap"><button class="profile-button" id="profileButton"><span>${escapeHtml(initials(state.profile.name))}</span><div><strong>${escapeHtml(state.profile.name)}</strong><small>${escapeHtml(state.profile.role)}</small></div><i>⌄</i></button><div class="popover profile-menu hidden" id="profileMenu"><button data-profile-settings>My profile</button><button id="signOut">Sign out</button></div></div></div></header>
-      <main class="content" id="viewRoot"></main><footer class="footer"><span>Webster Actions, Visibility & Execution</span><span>One shared planning system · Saved privately in this browser</span></footer>
+    <div class="app-main"><header class="topbar"><button class="mobile-menu" id="mobileMenu" aria-label="Open navigation">${icon("menu")}</button><div class="page-heading"><h1>${title}</h1><p>${description}</p></div><div class="top-actions"><button class="icon-action" id="notificationButton" aria-label="Open notifications and daily briefing">${icon("bell")}${notifications.length ? `<b>${notifications.length}</b>` : ""}</button><button class="button primary" id="addTop">＋ New activity</button><div class="profile-wrap"><button class="profile-button" id="profileButton"><span>${escapeHtml(initials(state.profile.name))}</span><div><strong>${escapeHtml(state.profile.name)}</strong><small>${escapeHtml(state.profile.role)}</small></div><i>⌄</i></button><div class="popover profile-menu hidden" id="profileMenu"><button data-profile-settings>My profile</button><button id="signOut">Sign out</button></div></div></div></header>
+      <main class="content" id="viewRoot"></main>
     </div><div class="mobile-scrim hidden" id="mobileScrim"></div>
-    <div class="popover notifications-popover hidden" id="notificationsPopover"><header><strong>Notifications</strong><span>${notifications.length} open</span></header>${notifications.length ? notifications.slice(0, 6).map((item) => `<button data-notification="${item.id}"><i class="${item.type}"></i><span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.help)}</small></span></button>`).join("") : '<p class="empty-copy">You’re all caught up.</p>'}</div>
+    <div class="popover notifications-popover hidden" id="notificationsPopover"><header><strong>Updates</strong><span>${notifications.length} open</span></header><button class="briefing-entry" id="openDailyBriefing"><span class="briefing-entry-icon">${icon("overview")}</span><span><strong>Daily briefing</strong><small>${briefingMetrics.today.length} remaining today · ${briefingMetrics.followUps.length} follow-ups due</small></span>${icon("arrowRight", "briefing-arrow")}</button>${notifications.length ? notifications.slice(0, 5).map((item) => `<button data-notification="${item.id}"><i class="${item.type}"></i><span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.help)}</small></span></button>`).join("") : '<p class="empty-copy">No urgent updates.</p>'}</div>
   </div>`;
 
   if (activeModule === "overview") renderOverview();
@@ -122,6 +135,7 @@ function bindShellEvents() {
   document.querySelector("#profileButton").addEventListener("click", (event) => { event.stopPropagation(); document.querySelector("#profileMenu").classList.toggle("hidden"); document.querySelector("#notificationsPopover").classList.add("hidden"); });
   document.querySelector("[data-profile-settings]").addEventListener("click", () => { activeModule = "settings"; render(); });
   document.querySelector("#signOut").addEventListener("click", () => { localStorage.removeItem(SESSION_KEY); render(); });
+  document.querySelector("#openDailyBriefing").addEventListener("click", () => { document.querySelector("#notificationsPopover").classList.add("hidden"); showReminder(true); });
   document.querySelectorAll("[data-notification]").forEach((button) => button.addEventListener("click", () => showActivityDetail(button.dataset.notification)));
 }
 
@@ -136,38 +150,49 @@ function renderLogin() {
   document.querySelector("#loginForm").addEventListener("submit", (event) => { event.preventDefault(); state.profile.name = document.querySelector("#loginName").value.trim() || DEFAULT_OWNER; state.profile.email = document.querySelector("#loginEmail").value.trim(); if (!state.team.includes(state.profile.name)) state.team.push(state.profile.name); save(); localStorage.setItem(SESSION_KEY, "active"); render(); });
 }
 
-function renderCommandStrip() {
-  const metrics = commandMetrics();
-  const cards = [["today", "Today", metrics.today.length, "Activities to execute"], ["pending", "Pending", metrics.pending.length, "Open through today"], ["followups", "Follow-ups", metrics.followUps.length, "Due for attention"], ["completed", "Completed", metrics.completed.length, "Finished today"]];
-  document.querySelector("#commandStrip").innerHTML = `<div class="command-intro"><span class="pulse"></span><div><strong>${weekDay(today())}, ${niceDate(today())}</strong><small>Live daily execution overview</small></div></div><div class="metric-grid">${cards.map(([key, label, count, help]) => `<button class="metric-card ${key}" data-metric="${key}"><span class="metric-label">${label}</span><strong>${count}</strong><small>${help}</small></button>`).join("")}</div>`;
-  document.querySelectorAll("[data-metric]").forEach((button) => button.addEventListener("click", () => { selectedDate = today(); monthStart = firstOfMonth(); weekStart = startOfWeek(); render(); }));
-}
-
 function periodActivities(start, end) { return state.activities.filter((activity) => activity.date >= start && activity.date <= end); }
 function completionRate(activities) { return activities.length ? Math.round(activities.reduce((sum, activity) => sum + progress(activity), 0) / activities.length) : 0; }
+function progressRing(value, className = "", label = "Progress") {
+  return `<span class="data-ring ${className}" role="img" aria-label="${label}: ${value}%"><svg viewBox="0 0 44 44"><circle class="ring-track" cx="22" cy="22" r="18"/><circle class="ring-value" cx="22" cy="22" r="18" pathLength="100" stroke-dasharray="${value} 100"/></svg><b>${value}%</b></span>`;
+}
 
 function renderOverview() {
   const current = today();
   const metrics = commandMetrics();
-  const week = periodActivities(startOfWeek(), endOfWeek());
+  const currentWeekStart = startOfWeek();
+  const weekDates = Array.from({ length: 7 }, (_, index) => shiftDate(currentWeekStart, index));
+  const week = periodActivities(currentWeekStart, endOfWeek(currentWeekStart));
   const month = periodActivities(firstOfMonth(), lastOfMonth(firstOfMonth()));
-  const upcoming = state.activities.filter((activity) => activity.date >= current && progress(activity) < 100).sort((a, b) => a.date.localeCompare(b.date) || PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority)).slice(0, 6);
-  const carried = state.activities.filter((activity) => isCarried(activity) && progress(activity) < 100);
-  const verticalStats = state.verticals.map((vertical) => { const items = month.filter((activity) => activity.vertical === vertical); return { vertical, count: items.length, rate: completionRate(items) }; }).filter((item) => item.count).sort((a, b) => b.count - a.count).slice(0, 6);
-  document.querySelector("#viewRoot").innerHTML = `<section class="overview-hero"><div><span class="date-chip">${weekDay(current)}, ${niceDate(current, { year: "numeric" })}</span><h2>Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}, ${escapeHtml(state.profile.name.split(" ")[0])}.</h2><p>${metrics.today.length ? `You have ${metrics.today.length} open ${metrics.today.length === 1 ? "priority" : "priorities"} today.` : "Your runway is clear. Plan the next meaningful move."}</p></div><div class="quick-actions"><button class="button primary" data-quick-add>＋ Add activity</button><button class="button" data-open-planner>Open planner</button><button class="button" data-briefing>☀ Briefing</button></div></section>
-    <section class="metric-cards">${[["Today",metrics.today.length,"Open priorities","today"],["Pending",metrics.pending.length,"Through today","pending"],["Carried",carried.length,"Moved forward","carried"],["Completed",metrics.completed.length,"Finished today","completed"]].map(([label,value,help,key]) => `<button class="overview-metric ${key}" data-metric-card="${key}"><span>${label}</span><strong>${value}</strong><small>${help}</small><i>↗</i></button>`).join("")}</section>
-    <section class="overview-grid"><article class="surface priority-panel"><header class="surface-head"><div><span class="section-kicker">Daily focus</span><h3>Today’s priorities</h3></div><button data-view-activities>View all</button></header><div class="priority-list">${metrics.today.length ? metrics.today.sort((a,b) => PRIORITIES.indexOf(a.priority)-PRIORITIES.indexOf(b.priority)).slice(0,5).map((activity) => overviewActivityRow(activity)).join("") : emptyBlock("✓", "Nothing pending today", "Use this space to plan the next action.")}</div></article>
-      <article class="surface progress-panel"><header class="surface-head"><div><span class="section-kicker">Momentum</span><h3>Progress snapshot</h3></div></header><div class="progress-rings"><div class="ring" style="--value:${completionRate(week)}"><strong>${completionRate(week)}%</strong><span>This week</span></div><div class="ring" style="--value:${completionRate(month)}"><strong>${completionRate(month)}%</strong><span>This month</span></div></div><div class="mini-stat-row"><span><b>${week.length}</b> weekly activities</span><span><b>${month.length}</b> monthly activities</span></div></article>
-      <article class="surface upcoming-panel"><header class="surface-head"><div><span class="section-kicker">Next up</span><h3>Upcoming & follow-ups</h3></div><span>${metrics.followUps.length} due</span></header><div class="timeline-list">${upcoming.length ? upcoming.map((activity) => `<button data-activity="${activity.id}"><time><strong>${parseDate(activity.date).getDate()}</strong><span>${parseDate(activity.date).toLocaleDateString("en-IN",{month:"short"})}</span></time><span><strong>${escapeHtml(activity.title)}</strong><small>${escapeHtml(activity.vertical)} · ${escapeHtml(activity.owner)}</small></span>${isFollowUpDue(activity) ? '<i>Follow-up</i>' : ""}</button>`).join("") : emptyBlock("○", "No upcoming activities", "Your future plan is open.")}</div></article>
-      <article class="surface vertical-panel"><header class="surface-head"><div><span class="section-kicker">This month</span><h3>Vertical-wise progress</h3></div></header><div class="vertical-progress">${verticalStats.length ? verticalStats.map((item) => `<div><span><strong>${escapeHtml(item.vertical)}</strong><small>${item.count} activities</small></span><div class="bar"><i style="width:${item.rate}%"></i></div><b>${item.rate}%</b></div>`).join("") : emptyBlock("▥", "No monthly activity yet", "Add activities to see progress by vertical.")}</div></article></section>`;
-  document.querySelector("[data-quick-add]").addEventListener("click", () => showActivityForm());
-  document.querySelector("[data-open-planner]").addEventListener("click", () => { activeModule = "planner"; render(); });
-  document.querySelector("[data-briefing]").addEventListener("click", () => showReminder(true));
-  document.querySelectorAll("[data-view-activities],[data-metric-card]").forEach((button) => button.addEventListener("click", () => { activeModule = "activities"; render(); }));
+  const todayActivities = state.activities.filter((activity) => activity.date === current);
+  const remainingToday = todayActivities.filter((activity) => progress(activity) < 100);
+  const completedToday = todayActivities.filter((activity) => progress(activity) === 100);
+  const dailyRate = completionRate(todayActivities);
+  const focus = [...remainingToday].sort((a, b) => PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority) || progress(b) - progress(a)).slice(0, 5);
+  const upcoming = state.activities.filter((activity) => activity.date > current && progress(activity) < 100).sort((a, b) => a.date.localeCompare(b.date) || PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority)).slice(0, 4);
+  const weekMomentum = weekDates.map((date) => { const items = state.activities.filter((activity) => activity.date === date); return { date, count: items.length, rate: completionRate(items) }; });
+  const outcomes = [
+    { label: "Outcomes recorded", value: month.filter((activity) => String(activity.outcome || "").trim()).length, icon: "overview" },
+    { label: "Content published", value: month.filter((activity) => activity.publicationTargets?.some((target) => target.status === "Published")).length, icon: "arrowRight" },
+    { label: "Follow-ups closed", value: month.filter((activity) => activity.followUpDone).length, icon: "activities" },
+  ];
+  const verticalStats = state.verticals.map((vertical) => { const items = month.filter((activity) => activity.vertical === vertical); return { vertical, count: items.length, rate: completionRate(items) }; }).filter((item) => item.count).sort((a, b) => b.count - a.count);
+  const verticalTotal = verticalStats.reduce((sum, item) => sum + item.count, 0);
+  document.querySelector("#viewRoot").innerHTML = `<section class="daily-snapshot surface"><div class="snapshot-heading"><span class="section-kicker">Daily snapshot</span><h2>${weekDay(current)}, ${niceDate(current)}</h2><p>Live progress across today’s plan.</p></div><div class="snapshot-progress">${progressRing(dailyRate, "snapshot-ring", "Today's progress")}<span><strong>Daily progress</strong><small>${todayActivities.length ? `${completedToday.length} of ${todayActivities.length} completed` : "No activities planned"}</small></span></div><div class="snapshot-metrics">${[["Planned",todayActivities.length,"calendar"],["Remaining",remainingToday.length,"remaining"],["Completed",completedToday.length,"completed"],["Follow-ups",metrics.followUps.length,"followups"]].map(([label,value,key]) => `<div class="snapshot-metric ${key}"><span>${label}</span><strong>${value}</strong></div>`).join("")}</div></section>
+    <section class="overview-primary"><article class="surface focus-panel"><header class="dashboard-panel-head"><div><span class="section-kicker">Today’s focus</span><h3>Priority activities</h3></div><button data-view-activities>All activities ${icon("arrowRight")}</button></header><div class="focus-list">${focus.length ? focus.map(overviewActivityRow).join("") : `<div class="focus-empty">${progressRing(100, "mini-ring", "Day complete")}<span><strong>Today is clear</strong><small>${todayActivities.length ? "Every planned activity is complete." : "No activities are scheduled for today."}</small></span></div>`}</div></article>
+      <div class="overview-insights"><article class="surface momentum-panel"><header class="dashboard-panel-head"><div><span class="section-kicker">Weekly momentum</span><h3>${completionRate(week)}% average progress</h3></div><span>${week.length} planned</span></header><div class="momentum-chart">${weekMomentum.map((day) => `<div class="momentum-day ${day.date === current ? "current" : ""}" title="${niceDate(day.date)}: ${day.count} planned, ${day.rate}% progress"><strong>${day.count ? `${day.rate}%` : "—"}</strong><div><i style="--momentum:${day.rate}%"></i></div><span>${weekDay(day.date, true).slice(0, 2)}</span></div>`).join("")}</div></article>
+        <article class="surface outcomes-panel"><header class="dashboard-panel-head"><div><span class="section-kicker">Business outcomes</span><h3>This month</h3></div></header><div class="outcome-grid">${outcomes.map((item) => `<div><span>${icon(item.icon)}</span><strong>${item.value}</strong><small>${item.label}</small></div>`).join("")}</div></article></div></section>
+    <section class="overview-secondary"><article class="surface compact-upcoming"><header class="dashboard-panel-head"><div><span class="section-kicker">Next up</span><h3>Upcoming activities</h3></div><span>${upcoming.length} visible</span></header><div class="upcoming-compact">${upcoming.length ? upcoming.map((activity) => `<button data-activity="${activity.id}"><time><strong>${parseDate(activity.date).getDate()}</strong><span>${parseDate(activity.date).toLocaleDateString("en-IN", { month: "short" })}</span></time><span><strong>${escapeHtml(activity.title)}</strong><small>${escapeHtml(activity.owner)}</small></span>${icon("arrowRight")}</button>`).join("") : '<p class="compact-empty">No upcoming activities scheduled.</p>'}</div></article>
+      <article class="surface vertical-balance"><header class="dashboard-panel-head"><div><span class="section-kicker">Vertical balance</span><h3>${verticalStats.length} active this month</h3></div></header>${verticalStats.length ? `<div class="vertical-stack">${verticalStats.map((item, index) => `<i class="tone-${index % 6}" style="width:${Math.max(2, Math.round(item.count / verticalTotal * 100))}%" title="${escapeHtml(item.vertical)}: ${item.count} activities, ${item.rate}% progress"></i>`).join("")}</div><div class="vertical-legend">${verticalStats.slice(0, 6).map((item, index) => `<span><i class="tone-${index % 6}"></i><b>${escapeHtml(item.vertical)}</b><small>${item.count} · ${item.rate}%</small></span>`).join("")}</div>` : '<p class="compact-empty">No activity planned this month.</p>'}</article></section>`;
+  document.querySelectorAll("[data-view-activities]").forEach((button) => button.addEventListener("click", () => { activeModule = "activities"; render(); }));
   document.querySelectorAll("[data-activity]").forEach((button) => button.addEventListener("click", () => showActivityDetail(button.dataset.activity)));
 }
 
-function overviewActivityRow(activity) { return `<button class="priority-row" data-activity="${activity.id}"><i class="priority-dot ${priorityClass(activity.priority)}"></i><span><strong>${escapeHtml(activity.title)}</strong><small>${escapeHtml(activity.vertical)} · ${progress(activity)}% complete</small></span><em>${escapeHtml(activity.owner)}</em><b>›</b></button>`; }
+function overviewActivityRow(activity) {
+  const activityProgress = progress(activity);
+  const completedSteps = activity.items.filter((item) => item.done).length;
+  const stepCopy = activity.items.length ? `${completedSteps}/${activity.items.length} steps` : statusOf(activity);
+  return `<button class="focus-row" data-activity="${activity.id}">${progressRing(activityProgress, "focus-ring", `${activity.title} progress`)}<span class="focus-copy"><strong><i class="priority-dot ${priorityClass(activity.priority)}"></i>${escapeHtml(activity.title)}</strong><small>${escapeHtml(activity.vertical)}<i></i>${stepCopy}</small></span><span class="focus-owner"><i>${escapeHtml(initials(activity.owner))}</i><small>${escapeHtml(activity.owner)}</small></span>${icon("arrowRight", "focus-arrow")}</button>`;
+}
 function emptyBlock(icon, title, copy) { return `<div class="module-empty"><i>${icon}</i><strong>${title}</strong><span>${copy}</span></div>`; }
 
 function renderPlanner() {
