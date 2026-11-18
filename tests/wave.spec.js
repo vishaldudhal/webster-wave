@@ -176,6 +176,26 @@ test("contextual activity flow and categorized settings remain integration-ready
   await expect(page.locator(".integration-card")).toHaveCount(6);
   await expect(page.getByText("No connection is active.")).toBeVisible();
   await expect(page.getByText("Connected", { exact: true })).toHaveCount(0);
+  const readability = await page.evaluate(() => {
+    const size = (selector) => parseFloat(getComputedStyle(document.querySelector(selector)).fontSize);
+    const lineHeight = (selector) => parseFloat(getComputedStyle(document.querySelector(selector)).lineHeight);
+    return {
+      settingsNav: size(".settings-nav button"),
+      settingsHeading: size(".settings-page-head h2"),
+      settingsCopy: size(".settings-page-head p"),
+      integrationTitle: size(".integration-card h3"),
+      integrationCopy: size(".integration-card p"),
+      integrationCopyLineHeight: lineHeight(".integration-card p"),
+      sidebarProfile: size(".sidebar-profile strong"),
+    };
+  });
+  expect(readability.settingsNav).toBeGreaterThanOrEqual(12);
+  expect(readability.settingsHeading).toBeGreaterThanOrEqual(20);
+  expect(readability.settingsCopy).toBeGreaterThanOrEqual(12);
+  expect(readability.integrationTitle).toBeGreaterThanOrEqual(13);
+  expect(readability.integrationCopy).toBeGreaterThanOrEqual(11);
+  expect(readability.integrationCopyLineHeight).toBeGreaterThanOrEqual(readability.integrationCopy * 1.4);
+  expect(readability.sidebarProfile).toBeGreaterThanOrEqual(12);
   await page.screenshot({ path: "test-results/wave-settings-integrations.png", fullPage: true });
 });
 
