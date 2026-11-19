@@ -25,7 +25,7 @@ function readUiPreferences() {
     const date = (value, fallback) => /^\d{4}-\d{2}-\d{2}$/.test(value || "") && !Number.isNaN(parseDate(value).getTime()) ? value : fallback;
     return {
       activeModule: ["overview", "planner", "settings"].includes(stored.activeModule) ? stored.activeModule : stored.activeModule === "activities" ? "planner" : UI_DEFAULTS.activeModule,
-      viewMode: ["week", "month", "activities"].includes(stored.viewMode) ? stored.viewMode : stored.activeModule === "activities" ? "activities" : UI_DEFAULTS.viewMode,
+      viewMode: ["week", "month"].includes(stored.viewMode) ? stored.viewMode : "week",
       monthStart: firstOfMonth(date(stored.monthStart, UI_DEFAULTS.monthStart)),
       weekStart: startOfWeek(date(stored.weekStart, UI_DEFAULTS.weekStart)),
       selectedDate: date(stored.selectedDate, UI_DEFAULTS.selectedDate),
@@ -59,7 +59,7 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character
 const priorityClass = (priority) => String(priority || "Medium").toLowerCase();
 const statusClass = (activity) => statusOf(activity).toLowerCase().replace(" ", "-");
 const isCarried = (activity) => activity.history.some((entry) => entry.type === "carried" || entry.from);
-const momentumMark = (className = "momentum-mark") => `<img class="${className}" src="/brand/wave-momentum-mark.svg" alt=""/>`;
+const momentumMark = (className = "momentum-mark", light = false) => `<img class="${className}" src="/brand/${light ? "wave-momentum-mark-light" : "wave-momentum-mark"}.svg" alt=""/>`;
 const momentumLockup = () => `<span class="wave-lockup" role="img" aria-label="wave">${momentumMark()}<strong>wave</strong></span>`;
 const ICON_PATHS = {
   overview: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
@@ -113,7 +113,7 @@ function render() {
   const moduleTitles = { overview: ["Overview", `${weekDay(today())}, ${niceDate(today(), { year: "numeric" })} · Live execution snapshot`], planner: ["Planner", "Plan, manage and track every activity in one connected workspace."], settings: ["Settings", "Configure your workspace, team and planning rules."] };
   const [title, description] = moduleTitles[activeModule];
   app.innerHTML = `<div class="saas-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}">
-    <aside class="sidebar" id="sidebar"><div class="sidebar-brand">${momentumMark()}<div class="brand-copy"><strong>wave</strong><span>by Webster</span></div></div>
+    <aside class="sidebar" id="sidebar"><div class="sidebar-brand">${momentumMark("momentum-mark", true)}<div class="brand-copy"><strong>wave</strong><span>by Webster</span></div></div>
       <nav class="side-nav" aria-label="Primary navigation">${[["overview","Overview"],["planner","Planner"],["settings","Settings"]].map(([key,label]) => `<button class="${activeModule === key ? "active" : ""}" data-module="${key}" data-tooltip="${label}" aria-label="${label}">${icon(key, "nav-icon")}<span>${label}</span></button>`).join("")}</nav>
       <div class="sidebar-foot"><div class="sidebar-profile"><span>${state.profile.avatar ? `<img src="${escapeHtml(state.profile.avatar)}" alt=""/>` : escapeHtml(initials(state.profile.name))}</span><div><strong>${escapeHtml(state.profile.name)}</strong><small>${escapeHtml(state.profile.role)}</small></div></div><button class="sidebar-toggle" id="sidebarToggle" data-tooltip="${sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}" aria-label="${sidebarCollapsed ? "Expand" : "Collapse"} sidebar">${icon(sidebarCollapsed ? "expand" : "collapse")}</button></div>
     </aside>
@@ -148,16 +148,16 @@ function closeMobileSidebar() { document.querySelector("#sidebar")?.classList.re
 function notificationItems() {
   const items = [];
   for (const activity of state.activities) {
-    if (state.settings.notificationFollowUps !== false && isFollowUpDue(activity)) items.push({ id: activity.id, title: activity.title, help: `Follow-up due ${niceDate(activity.followUpDate)}`, type: "followup" });
+    if (state.settings.notificationReviews !== false && activity.kind === "content" && activity.contentStatus === "Ready for Review") items.push({ id: activity.id, title: activity.title, help: "Content is ready for your review", type: "review" });
+    else if (state.settings.notificationFollowUps !== false && isFollowUpDue(activity)) items.push({ id: activity.id, title: activity.title, help: `Follow-up due ${niceDate(activity.followUpDate)}`, type: "followup" });
     else if (state.settings.notificationOverdue !== false && activity.date < today() && progress(activity) < 100) items.push({ id: activity.id, title: activity.title, help: `Overdue · planned for ${niceDate(activity.date)}`, type: "overdue" });
-    else if (state.settings.notificationReviews !== false && activity.kind === "content" && activity.contentStatus === "In Review") items.push({ id: activity.id, title: activity.title, help: "Content is waiting for review", type: "review" });
     else if (state.settings.notificationPublishing !== false && activity.publicationTargets?.some((target) => target.status === "Approved" || target.status === "Scheduled")) items.push({ id: activity.id, title: activity.title, help: `${activity.publicationTargets.filter((target) => target.status === "Approved" || target.status === "Scheduled").length} publishing update${activity.publicationTargets.length === 1 ? "" : "s"}`, type: "publishing" });
   }
   return items.sort((a, b) => a.type.localeCompare(b.type));
 }
 
 function renderLogin() {
-  app.innerHTML = `<section class="login-screen"><div class="login-brand-panel"><div class="login-brand">${momentumLockup()}<span class="brand-endorsement">by Webster</span></div><div class="login-promise"><span class="login-kicker">Business Development Command Centre</span><h1>Turn every opportunity into deliberate action.</h1><p>One connected workspace for planning, publishing, follow-ups and execution across Webster.</p><div class="login-proof"><span>✓ Eight growth verticals</span><span>✓ Connected weekly and monthly planning</span><span>✓ Private browser-based workspace</span></div></div><div class="login-footer"><strong>wave</strong> · Webster Actions, Visibility & Execution</div></div><div class="login-form-panel"><form class="login-card" id="loginForm"><div class="login-mobile-brand">${momentumLockup()}<span class="brand-endorsement">by Webster</span></div><span class="eyebrow">Private workspace</span><h2>Welcome back</h2><p>Sign in to continue to your command centre.</p><label class="field">Your name<input id="loginName" required value="${escapeHtml(state.profile.name)}" placeholder="Vishal Dudhal"/></label><label class="field">Work email<input id="loginEmail" type="email" value="${escapeHtml(state.profile.email)}" placeholder="you@webster.co.in"/></label><button class="button primary login-submit">Continue to wave →</button><small>Your planning data stays in this browser. No password or cloud account is required yet.</small></form></div></section>`;
+  app.innerHTML = `<section class="minimal-login"><form class="login-card" id="loginForm" aria-label="Sign in to wave"><div class="minimal-login-brand">${momentumLockup()}<span>by Webster</span></div><label class="field">Name<input id="loginName" required autocomplete="name" value="${escapeHtml(state.profile.name)}" placeholder="Your name"/></label><label class="field">Work email<input id="loginEmail" type="email" autocomplete="email" value="${escapeHtml(state.profile.email)}" placeholder="you@company.com"/></label><button class="button primary login-submit">Continue</button></form></section>`;
   document.querySelector("#loginForm").addEventListener("submit", (event) => { event.preventDefault(); state.profile.name = document.querySelector("#loginName").value.trim() || DEFAULT_OWNER; state.profile.email = document.querySelector("#loginEmail").value.trim(); if (!state.team.includes(state.profile.name)) state.team.push(state.profile.name); save(); localStorage.setItem(SESSION_KEY, "active"); render(); });
 }
 
@@ -194,7 +194,7 @@ function renderOverview() {
         <article class="surface outcomes-panel"><header class="dashboard-panel-head"><div><span class="section-kicker">Business outcomes</span><h3>This month</h3></div></header><div class="outcome-grid">${outcomes.map((item) => `<div><span>${icon(item.icon)}</span><strong>${item.value}</strong><small>${item.label}</small></div>`).join("")}</div></article></div></section>
     <section class="overview-secondary"><article class="surface compact-upcoming"><header class="dashboard-panel-head"><div><span class="section-kicker">Next up</span><h3>Upcoming activities</h3></div><span>${upcoming.length} visible</span></header><div class="upcoming-compact">${upcoming.length ? upcoming.map((activity) => `<button data-activity="${activity.id}"><time><strong>${parseDate(activity.date).getDate()}</strong><span>${parseDate(activity.date).toLocaleDateString("en-IN", { month: "short" })}</span></time><span><strong>${escapeHtml(activity.title)}</strong><small>${escapeHtml(activity.owner)}</small></span>${icon("arrowRight")}</button>`).join("") : '<p class="compact-empty">No upcoming activities scheduled.</p>'}</div></article>
       <article class="surface vertical-balance"><header class="dashboard-panel-head"><div><span class="section-kicker">Vertical balance</span><h3>${verticalStats.length} active this month</h3></div></header>${verticalStats.length ? `<div class="vertical-stack">${verticalStats.map((item, index) => `<i class="tone-${index % 6}" style="width:${Math.max(2, Math.round(item.count / verticalTotal * 100))}%" title="${escapeHtml(item.vertical)}: ${item.count} activities, ${item.rate}% progress"></i>`).join("")}</div><div class="vertical-legend">${verticalStats.slice(0, 6).map((item, index) => `<span><i class="tone-${index % 6}"></i><b>${escapeHtml(item.vertical)}</b><small>${item.count} · ${item.rate}%</small></span>`).join("")}</div>` : '<p class="compact-empty">No activity planned this month.</p>'}</article></section>`;
-  document.querySelectorAll("[data-view-activities]").forEach((button) => button.addEventListener("click", () => { activeModule = "planner"; viewMode = "activities"; render(); }));
+  document.querySelectorAll("[data-view-activities]").forEach((button) => button.addEventListener("click", () => { activeModule = "planner"; viewMode = "week"; render(); }));
   document.querySelectorAll("[data-activity]").forEach((button) => button.addEventListener("click", () => showActivityDetail(button.dataset.activity)));
 }
 
@@ -207,12 +207,12 @@ function overviewActivityRow(activity) {
 function emptyBlock(icon, title, copy) { return `<div class="module-empty"><i>${icon}</i><strong>${title}</strong><span>${copy}</span></div>`; }
 
 function renderPlanner() {
-  document.querySelector("#viewRoot").innerHTML = `<section class="module-toolbar planner-toolbar"><div class="view-switch"><button class="${viewMode === "week" ? "active" : ""}" data-view="week">Weekly Planner</button><button class="${viewMode === "month" ? "active" : ""}" data-view="month">Monthly Calendar</button><button class="${viewMode === "activities" ? "active" : ""}" data-view="activities">All Activities</button></div>${viewMode !== "activities" ? `<div class="planner-filters">${["All","Marketing","Business Development"].map((filter) => `<button class="${plannerFilter === filter ? "active" : ""}" data-planner-filter="${filter}">${filter}</button>`).join("")}</div><div class="filters"><label>Owner<select id="ownerFilter">${optionList(state.team, ownerFilter, true)}</select></label><label>Status<select id="statusFilter">${optionList(STATUSES, statusFilter, true)}</select></label></div>` : ""}</section><div id="plannerRoot"></div>`;
+  document.querySelector("#viewRoot").innerHTML = `<section class="module-toolbar planner-toolbar"><div class="view-switch"><button class="${viewMode === "week" ? "active" : ""}" data-view="week">Weekly Planner</button><button class="${viewMode === "month" ? "active" : ""}" data-view="month">Monthly Calendar</button></div><div class="planner-filters">${["All","Marketing","Business Development"].map((filter) => `<button class="${plannerFilter === filter ? "active" : ""}" data-planner-filter="${filter}">${filter}</button>`).join("")}</div><div class="filters"><label>Owner<select id="ownerFilter">${optionList(state.team, ownerFilter, true)}</select></label><label>Status<select id="statusFilter">${optionList(STATUSES, statusFilter, true)}</select></label></div></section><div id="plannerRoot"></div>`;
   document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => { viewMode = button.dataset.view; render(); }));
   document.querySelectorAll("[data-planner-filter]").forEach((button) => button.addEventListener("click", () => { plannerFilter = button.dataset.plannerFilter; render(); }));
   document.querySelector("#ownerFilter")?.addEventListener("change", (event) => { ownerFilter = event.target.value; render(); });
   document.querySelector("#statusFilter")?.addEventListener("change", (event) => { statusFilter = event.target.value; render(); });
-  if (viewMode === "month") renderMonthView(); else if (viewMode === "activities") renderActivities(); else renderWeekView();
+  if (viewMode === "month") renderMonthView(); else renderWeekView();
 }
 
 function renderActivities() {
@@ -240,10 +240,10 @@ function settingsSectionContent() {
     let body = "";
     if (settingsTemplateTab === "verticals") body = `<div class="template-grid">${state.verticals.map((vertical) => `<div><span><strong>${escapeHtml(vertical)}</strong><small>Business development vertical</small></span>${!Object.hasOwn(VERTICAL_TEMPLATES, vertical) ? `<button class="icon-danger" data-remove-vertical="${escapeHtml(vertical)}">×</button>` : ""}</div>`).join("")}</div><form class="inline-add" id="verticalForm"><input id="newVertical" required placeholder="Add a custom vertical"/><button class="button">Add vertical</button></form>`;
     if (settingsTemplateTab === "activity") body = `<div class="template-grid">${Object.entries(state.activityTemplates).map(([type,items]) => `<div><span><strong>${escapeHtml(type)}</strong><small>${items.length} default checklist steps</small></span><button class="button compact" data-edit-activity-template="${escapeHtml(type)}">Edit checklist</button></div>`).join("")}</div>`;
-    if (settingsTemplateTab === "content") body = `<div class="template-grid">${Object.entries(state.contentTemplates).map(([format,items]) => `<div><span><strong>${escapeHtml(format)}</strong><small>${items.length} production steps</small></span><button class="button compact" data-edit-content-template="${escapeHtml(format)}">Edit checklist</button></div>`).join("")}</div>`;
+    if (settingsTemplateTab === "content") body = `<div class="template-settings-section"><div class="section-title"><h3>Content objectives</h3><span>Used when planning content and recommending production formats.</span></div><div class="objective-list">${state.contentObjectives.map((objective) => `<span>${escapeHtml(objective)}<button data-remove-objective="${escapeHtml(objective)}" aria-label="Remove ${escapeHtml(objective)}">×</button></span>`).join("")}</div><form class="inline-add" id="objectiveForm"><input id="newObjective" required placeholder="Add a content objective"/><button class="button">Add objective</button></form></div><div class="template-settings-section"><div class="section-title"><h3>Formats & production checklists</h3><span>WAVE recommends these automatically; every plan can override them.</span></div><div class="template-grid">${Object.entries(state.contentTemplates).map(([format,items]) => `<div><span><strong>${escapeHtml(format)}</strong><small>${items.length} production steps</small></span><button class="button compact" data-edit-content-template="${escapeHtml(format)}">Edit checklist</button></div>`).join("")}</div></div>`;
     return `${heading("Verticals & Templates", "Customize planning defaults without changing existing records.")}<section class="surface settings-panel"><div class="settings-tabs">${tabs.map(([key,label]) => `<button class="${settingsTemplateTab === key ? "active" : ""}" data-template-tab="${key}">${label}</button>`).join("")}</div>${body}</section>`;
   }
-  if (settingsSection === "preferences") return `${heading("Preferences", "Set the rules WAVE uses when planning and rescheduling work.")}<section class="surface settings-panel settings-stack"><div><h3>Working days</h3><p>Automatic rescheduling only uses enabled days.</p><div class="day-toggles">${workingDays.map(([value,label]) => `<label><input type="checkbox" data-working-day value="${value}" ${state.settings.workingDays.includes(value) ? "checked" : ""}/><span>${label}</span></label>`).join("")}</div></div><div><h3>Holidays</h3><div class="holiday-list">${state.settings.holidays.length ? state.settings.holidays.map((date) => `<span>${niceDate(date,{year:"numeric"})}<button data-remove-holiday="${date}">×</button></span>`).join("") : '<p class="empty-copy">No holidays added.</p>'}</div><form class="inline-add" id="holidayForm"><input id="holidayDate" type="date" required/><button class="button">Add holiday</button></form></div><div class="preference-grid"><label class="field">Default planner view<select id="defaultPlannerView"><option value="week" ${state.settings.defaultPlannerView === "week" ? "selected" : ""}>Weekly Planner</option><option value="month" ${state.settings.defaultPlannerView === "month" ? "selected" : ""}>Monthly Calendar</option><option value="activities" ${state.settings.defaultPlannerView === "activities" ? "selected" : ""}>All Activities</option></select></label><label class="field">Timezone<select id="timezone"><option>Asia/Kolkata</option><option>UTC</option><option>Europe/London</option><option>America/New_York</option></select></label></div><label class="settings-toggle"><span><strong>Automatic rescheduling</strong><small>Carry unfinished flexible activities to the next working day.</small></span><input id="autoReschedule" type="checkbox" ${state.settings.autoReschedule !== false ? "checked" : ""}/><i></i></label></section>`;
+  if (settingsSection === "preferences") return `${heading("Preferences", "Set the rules WAVE uses when planning and rescheduling work.")}<section class="surface settings-panel settings-stack"><div><h3>Working days</h3><p>Automatic rescheduling only uses enabled days.</p><div class="day-toggles">${workingDays.map(([value,label]) => `<label><input type="checkbox" data-working-day value="${value}" ${state.settings.workingDays.includes(value) ? "checked" : ""}/><span>${label}</span></label>`).join("")}</div></div><div><h3>Holidays</h3><div class="holiday-list">${state.settings.holidays.length ? state.settings.holidays.map((date) => `<span>${niceDate(date,{year:"numeric"})}<button data-remove-holiday="${date}">×</button></span>`).join("") : '<p class="empty-copy">No holidays added.</p>'}</div><form class="inline-add" id="holidayForm"><input id="holidayDate" type="date" required/><button class="button">Add holiday</button></form></div><div class="preference-grid"><label class="field">Default planner view<select id="defaultPlannerView"><option value="week" ${state.settings.defaultPlannerView !== "month" ? "selected" : ""}>Weekly Planner</option><option value="month" ${state.settings.defaultPlannerView === "month" ? "selected" : ""}>Monthly Calendar</option></select></label><label class="field">Timezone<select id="timezone"><option>Asia/Kolkata</option><option>UTC</option><option>Europe/London</option><option>America/New_York</option></select></label></div><label class="settings-toggle"><span><strong>Automatic rescheduling</strong><small>Carry unfinished flexible activities to the next working day.</small></span><input id="autoReschedule" type="checkbox" ${state.settings.autoReschedule !== false ? "checked" : ""}/><i></i></label></section>`;
   if (settingsSection === "notifications") return `${heading("Notifications", "Choose which updates should appear in WAVE.")}<section class="surface settings-panel settings-stack"><label class="settings-toggle"><span><strong>Daily briefing</strong><small>Show an independent planning popup at the selected time.</small></span><input id="reminderEnabled" type="checkbox" ${state.settings.reminderEnabled ? "checked" : ""}/><i></i></label><label class="field notification-time">Daily briefing time<input id="reminderTime" type="time" value="${state.settings.reminderTime}"/></label>${[["notificationFollowUps","Follow-up reminders","Activities with a follow-up due."],["notificationOverdue","Overdue activities","Incomplete work past its planned date."],["notificationReviews","Pending reviews","Content waiting in the review stage."],["notificationPublishing","Publishing updates","Approved or scheduled channel updates."]].map(([key,title,copy]) => `<label class="settings-toggle"><span><strong>${title}</strong><small>${copy}</small></span><input data-notification-setting="${key}" type="checkbox" ${state.settings[key] !== false ? "checked" : ""}/><i></i></label>`).join("")}</section>`;
   if (settingsSection === "integrations") return `${heading("Integrations", "Connection surfaces are prepared for future product integrations.")}<div class="integration-grid">${[["Google Calendar","Two-way event and activity sync","G"],["Social platforms","Publishing and performance updates","#"],["Website CMS","Blog drafts and website publishing","W"],["Cloud storage","Shared files and creative assets","☁"],["AI tools","Assisted briefs, drafts and summaries","✦"],["Automation connectors","Triggers and cross-app workflows","⌁"]].map(([name,copy,glyph]) => `<article class="surface integration-card"><i>${glyph}</i><div><h3>${name}</h3><p>${copy}</p></div><span>Planned</span></article>`).join("")}</div><p class="integration-note">No connection is active. WAVE will only show connected services after real authorization and verification are implemented.</p>`;
   return `${heading("Data Management", "Protect, restore, or replace the local workspace plan.")}<section class="surface settings-panel data-settings"><div class="data-facts"><span><strong>${state.activities.length}</strong> activities</span><span><strong>${state.recurrences.length}</strong> recurring schedules</span><span><strong>${state.team.length}</strong> team members</span></div><div class="data-row"><div><h3>Backup & restore</h3><p>Download a portable workspace copy or restore a previous WAVE backup.</p></div><button class="button primary" id="openDataTools">Open backup tools</button></div><div class="data-row"><div><h3>Demo workspace</h3><p>Replace activities with a realistic sample plan. Profile and preferences are preserved.</p></div><button class="button" id="loadDemoData">Load demo data</button></div></section>`;
@@ -260,6 +260,8 @@ function bindSettingsEvents() {
   document.querySelectorAll("[data-edit-template]").forEach((button) => button.addEventListener("click", () => showTemplateEditor(button.dataset.editTemplate)));
   document.querySelectorAll("[data-edit-activity-template]").forEach((button) => button.addEventListener("click", () => showTemplateEditor(button.dataset.editActivityTemplate, "activity")));
   document.querySelectorAll("[data-edit-content-template]").forEach((button) => button.addEventListener("click", () => showTemplateEditor(button.dataset.editContentTemplate, "content")));
+  document.querySelector("#objectiveForm")?.addEventListener("submit", (event) => { event.preventDefault(); const value = document.querySelector("#newObjective").value.trim(); if (value && !state.contentObjectives.includes(value)) state.contentObjectives.push(value); save(); renderSettings(); });
+  document.querySelectorAll("[data-remove-objective]").forEach((button) => button.addEventListener("click", () => { const objective = button.dataset.removeObjective; if (state.contentObjectives.length === 1) return window.alert("Keep at least one content objective."); if (state.activities.some((activity) => activity.kind === "content" && activity.category === objective)) return window.alert("This objective is used by existing content and cannot be removed yet."); state.contentObjectives = state.contentObjectives.filter((item) => item !== objective); save(); renderSettings(); }));
   document.querySelectorAll("[data-template-tab]").forEach((button) => button.addEventListener("click", () => { settingsTemplateTab = button.dataset.templateTab; renderSettings(); }));
   document.querySelectorAll("[data-working-day]").forEach((input) => input.addEventListener("change", () => { const values = [...document.querySelectorAll("[data-working-day]:checked")].map((item) => Number(item.value)); if (!values.length) { input.checked = true; return window.alert("Keep at least one working day."); } state.settings.workingDays = values; save(); }));
   document.querySelector("#holidayForm")?.addEventListener("submit", (event) => { event.preventDefault(); const value = document.querySelector("#holidayDate").value; if (value && !state.settings.holidays.includes(value)) state.settings.holidays.push(value); state.settings.holidays.sort(); save(); renderSettings(); });
@@ -361,7 +363,19 @@ function renderWeekView() {
   document.querySelectorAll("[data-grid-add]").forEach((button) => button.addEventListener("click", () => showActivityForm(null, button.dataset.date, { row: button.dataset.row, type: button.dataset.type })));
   document.querySelectorAll("[data-weekly-open]").forEach((button) => button.addEventListener("click", () => showActivityDetail(button.dataset.weeklyOpen)));
   document.querySelectorAll("[data-inline-title]").forEach((input) => input.addEventListener("change", () => { const activity = state.activities.find((item) => item.id === input.dataset.inlineTitle); if (!activity || !input.value.trim()) return; activity.title = input.value.trim(); activity.updatedAt = new Date().toISOString(); save(); }));
-  document.querySelectorAll("[data-publish-status]").forEach((select) => select.addEventListener("change", () => { const activity = state.activities.find((item) => item.id === select.dataset.publishStatus); const target = activity?.publicationTargets.find((item) => item.channel === select.dataset.channel); if (!target) return; target.status = select.value; activity.updatedAt = new Date().toISOString(); save(); }));
+  document.querySelectorAll("[data-publish-status]").forEach((select) => select.addEventListener("change", () => {
+    const activity = state.activities.find((item) => item.id === select.dataset.publishStatus);
+    const target = activity?.publicationTargets.find((item) => item.channel === select.dataset.channel);
+    if (!target) return;
+    const previous = target.status;
+    const requiresApproval = ["Scheduled", "Published"].includes(select.value);
+    const approved = ["Approved", "Scheduled", "Published"].includes(activity.contentStatus);
+    if (requiresApproval && !approved) { select.value = previous; return window.alert("Approve this content before scheduling or recording publication."); }
+    if (select.value === "Published" && !["Approved", "Scheduled", "Published"].includes(previous)) { select.value = previous; return window.alert("Approve or schedule this channel before marking it published."); }
+    target.status = select.value;
+    activity.updatedAt = new Date().toISOString();
+    save();
+  }));
 }
 
 function weeklyCard(activity, row) {
@@ -391,6 +405,38 @@ function attachmentList(attachments) {
   return `<div class="attachment-list">${attachments.map((file) => `<a href="${escapeHtml(file.data)}" download="${escapeHtml(file.name)}"><span>↧</span><div><strong>${escapeHtml(file.name)}</strong><small>${file.size ? `${Math.ceil(file.size / 1024)} KB` : "Local attachment"}</small></div></a>`).join("")}</div>`;
 }
 
+function setContentStage(activity, nextStage, reviewNotes = "") {
+  if (!activity || activity.kind !== "content") return;
+  const previous = activity.contentStatus;
+  if (["Scheduled", "Published"].includes(nextStage) && !["Approved", "Scheduled", "Published"].includes(previous)) return window.alert("Content must be explicitly approved before it can be scheduled or marked published.");
+  activity.contentStatus = nextStage;
+  if (reviewNotes) activity.reviewNotes = reviewNotes;
+  const channelStage = nextStage === "Ready for Review" ? "Ready for Review" : nextStage;
+  activity.publicationTargets.forEach((target) => { if (target.status !== "Published") target.status = channelStage; });
+  activity.history.push({ type: "content-status", from: previous, to: nextStage, note: reviewNotes, at: new Date().toISOString() });
+  activity.updatedAt = new Date().toISOString();
+  save();
+}
+
+function showContentReview(id) {
+  const activity = state.activities.find((item) => item.id === id && item.kind === "content");
+  if (!activity) return;
+  openModal(`<article class="modal content-review-modal" role="dialog" aria-modal="true"><header class="modal-head"><div><div class="eyebrow">Content preview</div><h2>${escapeHtml(activity.topic || activity.title)}</h2><p class="modal-description">Review the plan and production context. WAVE does not generate or publish content from this preview.</p></div><button class="close-button" data-close>×</button></header><div class="content-preview-card"><div><span>Objective</span><strong>${escapeHtml(activity.category || "Not set")}</strong></div><div><span>Format</span><strong>${escapeHtml(activity.contentFormat || "Not set")}</strong></div><div><span>Publishing date</span><strong>${niceDate(activity.date, { year: "numeric" })}</strong></div><div><span>Channels</span><strong>${activity.publicationTargets.map((target) => escapeHtml(target.channel)).join(", ")}</strong></div></div>${activity.additionalDetails ? `<p class="preview-description">${escapeHtml(activity.additionalDetails).replace(/\n/g, "<br>")}</p>` : ""}<label class="field review-feedback">Review feedback<textarea id="reviewFeedback" rows="3" placeholder="Required when requesting changes">${escapeHtml(activity.reviewNotes || "")}</textarea></label><div class="form-actions"><button class="button" id="requestChanges">Request changes</button><button class="button primary" id="approveContent">Approve content</button></div></article>`);
+  overlay.querySelector("#approveContent").addEventListener("click", () => { setContentStage(activity, "Approved"); closeModal(); render(); showActivityDetail(id); });
+  overlay.querySelector("#requestChanges").addEventListener("click", () => { const feedback = overlay.querySelector("#reviewFeedback").value.trim(); if (!feedback) return window.alert("Add feedback before requesting changes."); setContentStage(activity, "In Production", feedback); closeModal(); render(); showActivityDetail(id); });
+}
+
+function showActivityExtras(id) {
+  const activity = state.activities.find((item) => item.id === id);
+  if (!activity) return;
+  let draftAttachments = activity.attachments.map((file) => ({ ...file }));
+  openModal(`<article class="modal" role="dialog" aria-modal="true"><header class="modal-head"><div><div class="eyebrow">After creation</div><h2>Working details</h2><p class="modal-description">Keep initial planning lightweight, then add context as the work progresses.</p></div><button class="close-button" data-close>×</button></header><form id="activityExtrasForm"><label class="field template-field">Notes<textarea id="extraNotes" rows="4">${escapeHtml(activity.notes)}</textarea></label><label class="field template-field">Outcome<textarea id="extraOutcome" rows="3">${escapeHtml(activity.outcome)}</textarea></label><label class="field template-field">Resource links<textarea id="extraResources" rows="3" placeholder="One link or reference per line">${escapeHtml(activity.resources)}</textarea></label><div class="preference-grid"><label class="field">Follow-up date<input id="extraFollowUp" type="date" value="${activity.followUpDate || ""}"/></label><label class="inline-check fixed-field"><input id="extraFixed" type="checkbox" ${activity.fixed ? "checked" : ""}/><span><strong>Fixed date</strong><small>Never move automatically</small></span></label></div><section class="form-section template-field"><div class="section-title"><h3>Attachments</h3><span>Stored locally · 1.5 MB each / 3 MB total</span></div><label class="file-input">＋ Add files<input id="extraAttachmentInput" type="file" multiple/></label><div id="extraAttachmentEditor"></div><p class="form-error hidden" id="extraAttachmentError"></p></section><div class="form-actions"><button class="button" type="button" data-close>Cancel</button><button class="button primary">Save details</button></div></form></article>`);
+  const drawAttachments = () => { const editor = overlay.querySelector("#extraAttachmentEditor"); editor.innerHTML = draftAttachments.length ? `<div class="attachment-editor">${draftAttachments.map((file, index) => `<div><span>▣</span><strong>${escapeHtml(file.name)}</strong><small>${Math.ceil(file.size / 1024)} KB</small><button type="button" data-remove-extra-file="${index}">×</button></div>`).join("")}</div>` : '<p class="empty-copy">No attachments added.</p>'; editor.querySelectorAll("[data-remove-extra-file]").forEach((button) => button.addEventListener("click", () => { draftAttachments.splice(Number(button.dataset.removeExtraFile), 1); drawAttachments(); })); };
+  drawAttachments();
+  overlay.querySelector("#extraAttachmentInput").addEventListener("change", async (event) => { const error = overlay.querySelector("#extraAttachmentError"); error.classList.add("hidden"); for (const file of event.target.files) { if (file.size > 1_500_000 || draftAttachments.reduce((sum, item) => sum + item.size, 0) + file.size > 3_000_000) { error.textContent = `${file.name} exceeds the attachment limit.`; error.classList.remove("hidden"); continue; } draftAttachments.push(await readFile(file)); } event.target.value = ""; drawAttachments(); });
+  overlay.querySelector("#activityExtrasForm").addEventListener("submit", (event) => { event.preventDefault(); activity.notes = overlay.querySelector("#extraNotes").value.trim(); activity.outcome = overlay.querySelector("#extraOutcome").value.trim(); activity.resources = overlay.querySelector("#extraResources").value.trim(); activity.followUpDate = overlay.querySelector("#extraFollowUp").value; activity.fixed = overlay.querySelector("#extraFixed").checked; activity.attachments = draftAttachments; activity.updatedAt = new Date().toISOString(); save(); closeModal(); render(); showActivityDetail(id); });
+}
+
 function showActivityDetail(id) {
   const activity = state.activities.find((item) => item.id === id);
   if (!activity) return;
@@ -399,8 +445,11 @@ function showActivityDetail(id) {
   const schedule = getSchedule(activity);
   const carried = activity.history.filter((entry) => entry.type === "carried" || entry.from);
   const checklist = activity.items.length ? activity.items.map((item, index) => `<label class="check-row ${item.done ? "done" : ""}"><input type="checkbox" data-check="${index}" ${item.done ? "checked" : ""}/><span>${escapeHtml(item.label)}</span></label>`).join("") : `<label class="check-row"><input type="checkbox" id="manualComplete" ${activity.manualDone ? "checked" : ""}/><span>Mark activity complete</span></label>`;
-  openModal(`<aside class="activity-drawer" role="dialog" aria-modal="true"><header class="drawer-head"><div><div class="eyebrow">${activity.kind === "content" ? "Content" : escapeHtml(activity.vertical)}</div><h2>${escapeHtml(activity.title)}</h2></div><button class="close-button" data-close>×</button></header><div class="drawer-badges"><span class="priority-badge ${priorityClass(activity.priority)}">${escapeHtml(activity.priority)} priority</span><span class="status-pill ${statusClass(activity)}">${activity.kind === "content" ? escapeHtml(activity.contentStatus) : statusOf(activity)}</span>${schedule ? `<span class="recurrence-tag">↻ ${escapeHtml(schedule.frequency)}</span>` : ""}${isCarried(activity) ? '<span class="carried-tag">↗ Carried forward</span>' : ""}</div>
-    <div class="detail-grid"><div><span>${activity.kind === "content" ? "Publishing" : "Scheduled"}</span><strong>${niceDate(activity.date, { year: "numeric" })}</strong></div><div><span>Assigned</span><strong>${escapeHtml(activity.owner)}</strong></div><div><span>${activity.kind === "content" ? "Format" : "Platform / context"}</span><strong>${escapeHtml(activity.kind === "content" ? activity.contentFormat || activity.activityType || "Not set" : activity.platform || "Not set")}</strong></div><div><span>${activity.kind === "content" ? "Lifecycle" : "Activity type"}</span><strong>${escapeHtml(activity.kind === "content" ? activity.contentStatus : activity.activityType || "Not set")}</strong></div><div><span>Category</span><strong>${escapeHtml(activity.category || "Not set")}</strong></div><div><span>Follow-up</span><strong>${activity.followUpDate ? niceDate(activity.followUpDate, { year: "numeric" }) : "Not set"}</strong></div></div>
+  const nextContentAction = { Draft: ["Start production", "In Production"], "In Production": ["Submit for review", "Ready for Review"], Approved: ["Mark scheduled", "Scheduled"], Scheduled: ["Mark published", "Published"] }[activity.contentStatus];
+  const workflow = activity.kind === "content" ? `<section class="content-workflow"><div class="workflow-track">${PUBLISHING_STATUSES.map((stage) => `<span class="${stage === activity.contentStatus ? "active" : ""} ${PUBLISHING_STATUSES.indexOf(stage) < PUBLISHING_STATUSES.indexOf(activity.contentStatus) ? "complete" : ""}">${escapeHtml(stage)}</span>`).join("")}</div><p>Approval is required before scheduling or publication. Status changes only record workflow progress; WAVE does not publish externally.</p><div class="workflow-actions">${activity.contentStatus === "Ready for Review" ? '<button class="button primary" id="reviewContent">Preview & review</button>' : nextContentAction ? `<button class="button primary" id="advanceContent" data-stage="${nextContentAction[1]}">${nextContentAction[0]}</button>` : ""}</div>${activity.reviewNotes ? `<div class="review-note"><strong>Latest review feedback</strong><p>${escapeHtml(activity.reviewNotes)}</p></div>` : ""}</section>` : "";
+  openModal(`<aside class="activity-drawer" role="dialog" aria-modal="true"><header class="drawer-head"><div><div class="eyebrow">${activity.kind === "content" ? "Content" : escapeHtml(activity.vertical)}</div><h2>${escapeHtml(activity.title)}</h2></div><button class="close-button" data-close>×</button></header><div class="drawer-badges"><span class="priority-badge ${priorityClass(activity.priority)}">${escapeHtml(activity.priority)} priority</span><span class="status-pill ${statusClass(activity)}">${activity.kind === "content" ? escapeHtml(activity.contentStatus) : statusOf(activity)}</span>${schedule ? `<span class="recurrence-tag">↻ ${escapeHtml(schedule.frequency)}</span>` : ""}${isCarried(activity) ? '<span class="carried-tag">↗ Carried forward</span>' : ""}</div>${workflow}
+    <div class="detail-grid"><div><span>${activity.kind === "content" ? "Publishing" : "Scheduled"}</span><strong>${niceDate(activity.date, { year: "numeric" })}${activity.time ? ` · ${escapeHtml(activity.time)}` : ""}</strong></div><div><span>Assigned</span><strong>${escapeHtml(activity.owner)}</strong></div><div><span>${activity.kind === "content" ? "Format" : "Context"}</span><strong>${escapeHtml(activity.kind === "content" ? activity.contentFormat || activity.activityType || "Not set" : activity.contactDetails || activity.location || activity.platform || "Not set")}</strong></div><div><span>${activity.kind === "content" ? "Lifecycle" : "Activity type"}</span><strong>${escapeHtml(activity.kind === "content" ? activity.contentStatus : activity.activityType || "Not set")}</strong></div><div><span>${activity.kind === "content" ? "Objective" : "Vertical"}</span><strong>${escapeHtml(activity.kind === "content" ? activity.category || "Not set" : activity.vertical)}</strong></div><div><span>Follow-up</span><strong>${activity.followUpDate ? niceDate(activity.followUpDate, { year: "numeric" }) : "Not set"}</strong></div></div>
+    ${activity.kind !== "content" && (activity.meetingLink || activity.location) ? `<section class="context-card">${activity.meetingLink ? `<div><span>Meeting link</span><strong>${escapeHtml(activity.meetingLink)}</strong></div>` : ""}${activity.location ? `<div><span>Location</span><strong>${escapeHtml(activity.location)}</strong></div>` : ""}</section>` : ""}
     ${activity.topic || activity.additionalDetails ? `<section class="context-card">${activity.topic ? `<div><span>Topic</span><strong>${escapeHtml(activity.topic)}</strong></div>` : ""}${activity.additionalDetails ? `<p>${escapeHtml(activity.additionalDetails).replace(/\n/g, "<br>")}</p>` : ""}</section>` : ""}
     ${activity.publicationTargets.length ? `<section class="drawer-section"><div class="section-title"><h3>Publishing channels</h3><span>${activity.publicationTargets.length}</span></div><div class="publication-list">${activity.publicationTargets.map((target) => `<span><strong>${escapeHtml(target.channel)}</strong><i>${escapeHtml(target.status)}</i></span>`).join("")}</div></section>` : ""}
     <section class="progress-hero"><div><span>Overall progress</span><strong>${value}%</strong></div><div class="progress-track"><i class="progress-fill" style="width:${value}%"></i></div><small>${completed} of ${activity.items.length || 1} steps complete</small></section>
@@ -411,11 +460,14 @@ function showActivityDetail(id) {
     <section class="drawer-section"><div class="section-title"><h3>Outcome</h3></div>${activity.outcome ? `<p class="notes-copy">${escapeHtml(activity.outcome).replace(/\n/g, "<br>")}</p>` : '<p class="empty-copy">No outcome recorded yet.</p>'}</section>
     ${activity.followUpDate ? `<label class="followup-check ${activity.followUpDone ? "done" : ""}"><input type="checkbox" id="followUpDone" ${activity.followUpDone ? "checked" : ""}/><span><strong>Follow-up ${activity.followUpDone ? "completed" : "tracked"}</strong><small>${niceDate(activity.followUpDate, { year: "numeric" })}</small></span></label>` : ""}
     ${carried.length ? `<section class="drawer-section activity-history"><div class="section-title"><h3>Rescheduling history</h3></div>${carried.slice(-4).reverse().map((entry) => `<p>Moved from ${niceDate(entry.from)} to ${niceDate(entry.to)}</p>`).join("")}</section>` : ""}
-    <div class="drawer-actions"><button class="button ghost-danger" id="deleteActivity">Delete</button>${schedule ? '<button class="button ghost-danger" id="deleteSeries">Delete series</button>' : ""}<button class="button" id="editActivity">Edit</button><button class="button primary" data-close>Done</button></div>
+    <div class="drawer-actions"><button class="button ghost-danger" id="deleteActivity">Delete</button>${schedule ? '<button class="button ghost-danger" id="deleteSeries">Delete series</button>' : ""}<button class="button" id="manageDetails">Manage details</button><button class="button" id="editActivity">Edit plan</button><button class="button primary" data-close>Done</button></div>
   </aside>`, true);
   overlay.querySelectorAll("[data-check]").forEach((checkbox) => checkbox.addEventListener("change", () => { activity.items[Number(checkbox.dataset.check)].done = checkbox.checked; activity.updatedAt = new Date().toISOString(); save(); render(); showActivityDetail(id); }));
   overlay.querySelector("#manualComplete")?.addEventListener("change", (event) => { activity.manualDone = event.target.checked; save(); render(); showActivityDetail(id); });
   overlay.querySelector("#followUpDone")?.addEventListener("change", (event) => { activity.followUpDone = event.target.checked; save(); render(); showActivityDetail(id); });
+  overlay.querySelector("#reviewContent")?.addEventListener("click", () => showContentReview(id));
+  overlay.querySelector("#advanceContent")?.addEventListener("click", (event) => { setContentStage(activity, event.currentTarget.dataset.stage); closeModal(); render(); showActivityDetail(id); });
+  overlay.querySelector("#manageDetails").addEventListener("click", () => showActivityExtras(id));
   overlay.querySelector("#editActivity").addEventListener("click", () => showActivityForm(id));
   overlay.querySelector("#deleteActivity").addEventListener("click", () => { if (!window.confirm("Delete this occurrence?")) return; deleteActivity(id); closeModal(); render(); });
   overlay.querySelector("#deleteSeries")?.addEventListener("click", () => { if (!window.confirm("Delete this recurring schedule and all its occurrences?")) return; deleteActivity(id, "series"); closeModal(); render(); });
@@ -487,6 +539,14 @@ function showDataTools() {
   });
 }
 
+function recommendContentFormat(channels, objective) {
+  if (channels.includes("Blogs")) return "Blog";
+  if (channels.includes("YouTube")) return "Video";
+  if (["Engagement", "Community Building", "Employer Branding"].includes(objective) && channels.some((channel) => ["Instagram", "Facebook"].includes(channel))) return "Reel";
+  if (["Education", "Brand Authority", "Social Proof"].includes(objective)) return "Carousel";
+  return "Social post";
+}
+
 function showActivityForm(id = null, defaultDate = selectedDate, context = {}) {
   const activity = id ? state.activities.find((item) => item.id === id) : null;
   const schedule = getSchedule(activity);
@@ -495,59 +555,45 @@ function showActivityForm(id = null, defaultDate = selectedDate, context = {}) {
   const isContent = formMode === "content";
   const initialVertical = isContent ? "Marketing" : activity?.vertical || (context.type === "vertical" ? context.row : state.verticals.find((item) => item !== "Marketing") || state.verticals[0]);
   const initialActivityType = activity?.activityType || Object.keys(state.activityTemplates)[0];
-  const inferredContentFormat = activity?.activityType === "Article" ? "Blog" : activity?.activityType === "Video" ? "Video" : activity?.activityType === "Reel / Short" ? "Reel" : "Social post";
-  const initialContentFormat = activity?.contentFormat || inferredContentFormat;
   const activityTypes = Array.from(new Set([...Object.keys(state.activityTemplates), ...(activity?.activityType ? [activity.activityType] : [])]));
-  const initialTemplate = isContent ? state.contentTemplates[initialContentFormat] : state.activityTemplates[initialActivityType];
-  let draftItems = activity ? activity.items.map((item) => ({ ...item })) : (initialTemplate || state.templates[initialVertical] || []).map((label) => ({ id: uid(), label, done: false }));
-  let draftAttachments = activity ? activity.attachments.map((file) => ({ ...file })) : [];
-  let draftTargets = activity ? activity.publicationTargets.map((target) => ({ ...target })) : (context.type === "channel" ? [{ channel: context.row, status: "Planned" }] : []);
+  let draftTargets = activity ? activity.publicationTargets.map((target) => ({ ...target })) : (context.type === "channel" ? [{ channel: context.row, status: "Draft" }] : []);
+  const initialObjective = activity?.category || state.contentObjectives[0];
+  const contentObjectiveOptions = Array.from(new Set([...state.contentObjectives, ...(activity?.category ? [activity.category] : [])]));
+  const inferredFormat = recommendContentFormat(draftTargets.map((target) => target.channel), initialObjective);
+  let selectedFormat = activity?.contentFormat || inferredFormat;
+  let formatManuallyChanged = Boolean(activity?.contentFormat);
+  const initialTemplate = isContent ? state.contentTemplates[selectedFormat] : state.activityTemplates[initialActivityType];
+  let draftItems = activity ? activity.items.map((item) => ({ ...item })) : (initialTemplate || []).map((label) => ({ id: uid(), label, done: false }));
   const recurrenceFrequency = schedule?.frequency || "none";
   const recurringWeekdays = schedule?.weekdays || [];
-  openModal(`<article class="modal form-modal wide-form contextual-form" role="dialog" aria-modal="true"><header class="modal-head"><div><div class="eyebrow">${editing ? `Edit ${isContent ? "content" : "activity"}` : "New plan"}</div><h2>${editing ? `Update ${isContent ? "content" : "activity"}` : isContent ? "Plan Content" : "Plan an Activity"}</h2><p class="modal-description">${isContent ? "Create once, move through review, and track every publishing channel." : "Plan a clear business development action with only the fields you need."}</p></div><button class="close-button" data-close>×</button></header>
-    <form class="form activity-form" id="activityForm">
-      <label class="field span-2">${isContent ? "Content title" : "Activity title"}<input id="activityTitle" required maxlength="120" placeholder="${isContent ? "What are you creating?" : "What needs to happen?"}" value="${escapeHtml(activity?.title || "")}"/></label>
-      ${isContent ? '<select id="activityVertical" class="hidden"><option>Marketing</option></select><input id="activityVerticalNew" class="hidden"/>' : fieldSelect("Business development vertical", "activityVertical", state.verticals, initialVertical, "Add new vertical…")}
-      ${fieldSelect("Assigned person", "activityOwner", state.team, activity?.owner || DEFAULT_OWNER, "Add new person…")}
-      <label class="field">${isContent ? "Publishing date" : "Scheduled date"}<input id="activityDate" type="date" required value="${activity?.date || defaultDate}"/></label>
+  const recurrenceFields = `<div class="recurrence-grid"><label class="field">Repeat<select id="recurrenceFrequency"><option value="none" ${recurrenceFrequency === "none" ? "selected" : ""}>Does not repeat</option><option value="weekly" ${recurrenceFrequency === "weekly" ? "selected" : ""}>Weekly</option><option value="monthly" ${recurrenceFrequency === "monthly" ? "selected" : ""}>Monthly</option><option value="weekdays" ${recurrenceFrequency === "weekdays" ? "selected" : ""}>Specific weekdays</option></select></label><label class="field">End date (optional)<input id="recurrenceUntil" type="date" value="${schedule?.until || ""}"/></label>${schedule ? `<label class="field">Apply changes<select id="editScope"><option value="occurrence">This occurrence only</option><option value="series">This and future schedule</option></select></label>` : ""}</div><div class="weekday-picker ${recurrenceFrequency === "weekdays" ? "" : "hidden"}" id="weekdayPicker">${[[1,"Mon"],[2,"Tue"],[3,"Wed"],[4,"Thu"],[5,"Fri"],[6,"Sat"],[0,"Sun"]].map(([value,label]) => `<label><input type="checkbox" value="${value}" ${recurringWeekdays.includes(value) ? "checked" : ""}/><span>${label}</span></label>`).join("")}</div>`;
+
+  openModal(`<article class="modal form-modal wide-form contextual-form" role="dialog" aria-modal="true"><header class="modal-head"><div><div class="eyebrow">${editing ? "Edit plan" : "New plan"}</div><h2>${editing ? `Update ${isContent ? "content" : "activity"}` : isContent ? "Plan Content" : "Plan an Activity"}</h2></div><button class="close-button" data-close>×</button></header>
+    <form class="form activity-form simplified-form" id="activityForm">
+      ${isContent ? `<label class="field span-2">Content topic<input id="activityTopic" required maxlength="120" placeholder="What is this content about?" value="${escapeHtml(activity?.topic || (activity?.title === "Untitled content" ? "" : activity?.title || ""))}"/></label><label class="field">Content objective<select id="activityCategory">${contentObjectiveOptions.map((objective) => `<option ${initialObjective === objective ? "selected" : ""}>${escapeHtml(objective)}</option>`).join("")}</select></label>` : `<label class="field span-2">Activity title<input id="activityTitle" required maxlength="120" placeholder="What needs to happen?" value="${escapeHtml(activity?.title || "")}"/></label>${fieldSelect("Business development vertical", "activityVertical", state.verticals, initialVertical, "Add new vertical…")}<label class="field">Activity type<select id="activityType">${activityTypes.map((type) => `<option ${initialActivityType === type ? "selected" : ""}>${escapeHtml(type)}</option>`).join("")}</select></label>${fieldSelect("Assigned person", "activityOwner", state.team, activity?.owner || DEFAULT_OWNER, "Add new person…")}`}
+      <label class="field">${isContent ? "Publishing date" : "Date"}<input id="activityDate" type="date" required value="${activity?.date || defaultDate}"/></label>
+      ${isContent ? "" : `<label class="field">Time (optional)<input id="activityTime" type="time" value="${escapeHtml(activity?.time || "")}"/></label>`}
       <label class="field">Priority<select id="activityPriority">${PRIORITIES.map((priority) => `<option ${activity?.priority === priority || (!activity && priority === "Medium") ? "selected" : ""}>${priority}</option>`).join("")}</select></label>
-      ${isContent ? `<label class="field">Content format<select id="contentFormat">${CONTENT_FORMATS.map((format) => `<option ${initialContentFormat === format ? "selected" : ""}>${format}</option>`).join("")}</select></label><label class="field">Content lifecycle<select id="contentStatus">${PUBLISHING_STATUSES.map((status) => `<option ${activity?.contentStatus === status || (!activity && status === "Planned") ? "selected" : ""}>${status}</option>`).join("")}</select></label><input id="activityType" class="hidden" value="${escapeHtml(initialContentFormat)}"/><input id="activityPlatform" class="hidden" value="${escapeHtml(activity?.platform || "")}"/>` : `<label class="field">Activity type<select id="activityType">${activityTypes.map((type) => `<option ${initialActivityType === type ? "selected" : ""}>${type}</option>`).join("")}</select></label><label class="field" id="activityContextLabel">Contact, platform or location<input id="activityPlatform" list="platformSuggestions" maxlength="60" placeholder="Where or with whom?" value="${escapeHtml(activity?.platform || "")}"/><datalist id="platformSuggestions">${PLATFORM_SUGGESTIONS.map((value) => `<option value="${value}">`).join("")}</datalist></label><input id="contentFormat" class="hidden" value=""/><input id="contentStatus" class="hidden" value="Planned"/>`}
-      <label class="field">Category<input id="activityCategory" list="categorySuggestions" maxlength="60" placeholder="${isContent ? "e.g. Awareness" : "e.g. Lead generation"}" value="${escapeHtml(activity?.category || "")}"/><datalist id="categorySuggestions">${CATEGORY_SUGGESTIONS.map((value) => `<option value="${value}">`).join("")}</datalist></label>
-      <label class="field">${isContent ? "Topic" : "Purpose or topic"}<input id="activityTopic" maxlength="120" placeholder="${isContent ? "Campaign or content topic" : "What is this activity about?"}" value="${escapeHtml(activity?.topic || "")}"/></label>
-      <section class="form-section span-2 ${isContent ? "" : "hidden"}" id="publishingSection"><div class="section-title"><h3>Publishing channels</h3><span>Individual status per channel</span></div><div class="publishing-editor" id="publishingEditor"></div><label class="field blog-type-field ${activity?.blogType || context.row === "Blogs" ? "" : "hidden"}" id="blogTypeField">Blog stream<select id="blogType"><option value="">Choose blog stream</option>${BLOG_TYPES.map((type) => `<option ${activity?.blogType === type ? "selected" : ""}>${type}</option>`).join("")}</select></label></section>
-      <section class="form-section span-2 production-checklist"><div class="section-title checklist-heading"><div><h3>${isContent ? "Production checklist" : "Activity checklist"}</h3><small>Loaded from your ${isContent ? "content format" : "activity type"} template</small></div><span id="stepCount"></span></div><div id="checklistEditor"></div><button class="new-check" id="addChecklistItem" type="button">＋ Add checklist step</button></section>
-      <details class="additional-details span-2" ${editing && (activity.additionalDetails || activity.notes || activity.resources || activity.outcome || activity.followUpDate || activity.attachments.length || schedule) ? "open" : ""}><summary><span><strong>Additional Details</strong><small>Recurrence, follow-ups, notes, outcomes and resources</small></span><i>⌄</i></summary><div class="additional-details-grid">
-      <label class="field span-2">Brief or instructions<textarea id="additionalDetails" rows="3" placeholder="Brief, talking points or instructions">${escapeHtml(activity?.additionalDetails || "")}</textarea></label>
-      <label class="field">Follow-up date<input id="followUpDate" type="date" value="${activity?.followUpDate || ""}"/></label>
-      <label class="inline-check fixed-field"><input id="fixedDate" type="checkbox" ${activity?.fixed ? "checked" : ""}/><span><strong>Fixed date</strong><small>Never move automatically</small></span></label>
-      <section class="form-section span-2"><div class="section-title"><h3>Recurrence</h3><span>Fresh checklist for every occurrence</span></div><div class="recurrence-grid"><label class="field">Repeat<select id="recurrenceFrequency"><option value="none" ${recurrenceFrequency === "none" ? "selected" : ""}>Does not repeat</option><option value="weekly" ${recurrenceFrequency === "weekly" ? "selected" : ""}>Weekly</option><option value="monthly" ${recurrenceFrequency === "monthly" ? "selected" : ""}>Monthly</option><option value="weekdays" ${recurrenceFrequency === "weekdays" ? "selected" : ""}>Specific weekdays</option></select></label><label class="field">End date (optional)<input id="recurrenceUntil" type="date" value="${schedule?.until || ""}"/></label>${schedule ? `<label class="field">Apply changes<select id="editScope"><option value="occurrence">This occurrence only</option><option value="series">This and future schedule</option></select></label>` : ""}</div><div class="weekday-picker ${recurrenceFrequency === "weekdays" ? "" : "hidden"}" id="weekdayPicker">${[[1,"Mon"],[2,"Tue"],[3,"Wed"],[4,"Thu"],[5,"Fri"],[6,"Sat"],[0,"Sun"]].map(([value,label]) => `<label><input type="checkbox" value="${value}" ${recurringWeekdays.includes(value) ? "checked" : ""}/><span>${label}</span></label>`).join("")}</div></section>
-      <label class="field span-2">Notes<textarea id="activityNotes" rows="3" placeholder="Internal context and working notes">${escapeHtml(activity?.notes || "")}</textarea></label>
-      <label class="field span-2">Outcome<textarea id="activityOutcome" rows="2" placeholder="Result, response or next decision">${escapeHtml(activity?.outcome || "")}</textarea></label>
-      <label class="field span-2">Resource links<textarea id="activityResources" rows="2" placeholder="One link or reference per line">${escapeHtml(activity?.resources || "")}</textarea></label>
-      <section class="form-section span-2"><div class="section-title"><h3>Attachments</h3><span>Stored locally · 1.5 MB each / 3 MB total</span></div><label class="file-input">＋ Add files<input id="attachmentInput" type="file" multiple/></label><div id="attachmentEditor"></div><p class="form-error hidden" id="attachmentError"></p></section>
+      ${isContent ? `<section class="form-section span-2" id="publishingSection"><div class="section-title"><h3>Publishing channels</h3><span>Each selected channel starts in Draft.</span></div><div class="publishing-editor channel-picker" id="publishingEditor"></div></section><section class="form-section span-2"><div class="section-title"><h3>Recurrence</h3><span>Repeats the publishing schedule with an empty topic and fresh progress.</span></div>${recurrenceFields}</section>` : `<label class="field span-2">Description<textarea id="additionalDetails" rows="3" placeholder="Purpose, context or expected outcome">${escapeHtml(activity?.additionalDetails || "")}</textarea></label><div class="relevant-fields span-2" id="relevantFields"><label class="field" data-context="contact">Contact details<input id="contactDetails" placeholder="Name, company, phone or email" value="${escapeHtml(activity?.contactDetails || activity?.platform || "")}"/></label><label class="field" data-context="meeting">Meeting link<input id="meetingLink" type="url" placeholder="https://…" value="${escapeHtml(activity?.meetingLink || "")}"/></label><label class="field" data-context="location">Location<input id="activityLocation" placeholder="Address or venue" value="${escapeHtml(activity?.location || "")}"/></label></div>`}
+      <details class="additional-details more-options span-2" ${editing && (schedule || activity.items.length) ? "open" : ""}><summary><span><strong>More Options</strong><small>${isContent ? "Format recommendation and production checklist" : "Recurrence and checklist"}</small></span><i>⌄</i></summary><div class="additional-details-grid">
+        ${isContent ? `<label class="field span-2">Content format <span class="field-help" id="formatRecommendation">Recommended from objective and channels</span><select id="contentFormat">${CONTENT_FORMATS.map((format) => `<option ${selectedFormat === format ? "selected" : ""}>${format}</option>`).join("")}</select></label>` : `<section class="form-section span-2"><div class="section-title"><h3>Recurrence</h3><span>Fresh checklist for every occurrence</span></div>${recurrenceFields}</section>`}
+        <section class="form-section span-2 production-checklist"><div class="section-title checklist-heading"><div><h3>${isContent ? "Production checklist" : "Activity checklist"}</h3><small>Automatically loaded from the selected ${isContent ? "format" : "activity type"}; edit any step.</small></div><span id="stepCount"></span></div><div id="checklistEditor"></div><button class="new-check" id="addChecklistItem" type="button">＋ Add checklist step</button></section>
       </div></details>
       <div class="form-actions span-2"><button class="button" type="button" data-close>Cancel</button><button class="button primary" type="submit">${editing ? "Save changes" : isContent ? "Plan content" : "Plan activity"}</button></div>
     </form></article>`);
 
-  const verticalSelect = overlay.querySelector("#activityVertical");
-  const ownerSelect = overlay.querySelector("#activityOwner");
   const recurrenceSelect = overlay.querySelector("#recurrenceFrequency");
   const checklistEditor = overlay.querySelector("#checklistEditor");
-  const attachmentEditor = overlay.querySelector("#attachmentEditor");
   const publishingEditor = overlay.querySelector("#publishingEditor");
 
-  function setupCustomSelect(select, onKnownValue) {
+  function setupCustomSelect(select) {
+    if (!select) return () => "";
     const input = overlay.querySelector(`#${select.id}New`);
-    select.addEventListener("change", () => {
-      const adding = select.value === "__new__";
-      input.classList.toggle("hidden", !adding);
-      input.required = adding;
-      if (adding) input.focus(); else onKnownValue?.(select.value);
-    });
+    select.addEventListener("change", () => { const adding = select.value === "__new__"; input.classList.toggle("hidden", !adding); input.required = adding; if (adding) input.focus(); });
     return () => select.value === "__new__" ? input.value.trim() : select.value;
   }
-  const getVertical = isContent ? () => "Marketing" : setupCustomSelect(verticalSelect);
-  const getOwner = setupCustomSelect(ownerSelect);
+  const getVertical = isContent ? () => "Marketing" : setupCustomSelect(overlay.querySelector("#activityVertical"));
+  const getOwner = isContent ? () => activity?.owner || state.profile.name || DEFAULT_OWNER : setupCustomSelect(overlay.querySelector("#activityOwner"));
 
   function drawChecklist() {
     overlay.querySelector("#stepCount").textContent = `${draftItems.length} steps`;
@@ -555,44 +601,63 @@ function showActivityForm(id = null, defaultDate = selectedDate, context = {}) {
     checklistEditor.querySelectorAll("[data-check-input]").forEach((input) => input.addEventListener("input", () => { draftItems[Number(input.dataset.checkInput)].label = input.value; }));
     checklistEditor.querySelectorAll("[data-remove-check]").forEach((button) => button.addEventListener("click", () => { draftItems.splice(Number(button.dataset.removeCheck), 1); drawChecklist(); }));
   }
-  function drawAttachments() {
-    attachmentEditor.innerHTML = draftAttachments.length ? `<div class="attachment-editor">${draftAttachments.map((file, index) => `<div><span>▣</span><strong>${escapeHtml(file.name)}</strong><small>${Math.ceil(file.size / 1024)} KB</small><button type="button" data-remove-file="${index}">×</button></div>`).join("")}</div>` : '<p class="empty-copy">No files selected.</p>';
-    attachmentEditor.querySelectorAll("[data-remove-file]").forEach((button) => button.addEventListener("click", () => { draftAttachments.splice(Number(button.dataset.removeFile), 1); drawAttachments(); }));
+  function loadTemplate(formatOrType, force = false) {
+    const template = isContent ? state.contentTemplates[formatOrType] : state.activityTemplates[formatOrType];
+    if (!template || (!force && editing)) return;
+    draftItems = template.map((label) => ({ id: uid(), label, done: false }));
+    drawChecklist();
+  }
+  function applyRecommendation() {
+    if (!isContent || formatManuallyChanged) return;
+    const objective = overlay.querySelector("#activityCategory").value;
+    selectedFormat = recommendContentFormat(draftTargets.map((target) => target.channel), objective);
+    overlay.querySelector("#contentFormat").value = selectedFormat;
+    overlay.querySelector("#formatRecommendation").textContent = `Recommended: ${selectedFormat}`;
+    loadTemplate(selectedFormat, true);
   }
   function drawPublishing() {
-    publishingEditor.innerHTML = MARKETING_CHANNELS.map((channel) => { const target = draftTargets.find((item) => item.channel === channel); return `<div class="publish-channel ${target ? "selected" : ""}"><label><input type="checkbox" data-publish-channel="${escapeHtml(channel)}" ${target ? "checked" : ""}/><span>${escapeHtml(channel)}</span></label><select data-publish-select="${escapeHtml(channel)}" ${target ? "" : "disabled"}>${PUBLISHING_STATUSES.map((status) => `<option ${target?.status === status ? "selected" : ""}>${status}</option>`).join("")}</select></div>`; }).join("");
-    publishingEditor.querySelectorAll("[data-publish-channel]").forEach((input) => input.addEventListener("change", () => { if (input.checked) draftTargets.push({ channel: input.dataset.publishChannel, status: "Planned" }); else draftTargets = draftTargets.filter((item) => item.channel !== input.dataset.publishChannel); drawPublishing(); }));
-    publishingEditor.querySelectorAll("[data-publish-select]").forEach((select) => select.addEventListener("change", () => { const target = draftTargets.find((item) => item.channel === select.dataset.publishSelect); if (target) target.status = select.value; }));
-    overlay.querySelector("#blogTypeField").classList.toggle("hidden", !draftTargets.some((item) => item.channel === "Blogs"));
+    if (!publishingEditor) return;
+    publishingEditor.innerHTML = MARKETING_CHANNELS.map((channel) => { const selected = draftTargets.some((item) => item.channel === channel); return `<label class="publish-channel ${selected ? "selected" : ""}"><input type="checkbox" data-publish-channel="${escapeHtml(channel)}" ${selected ? "checked" : ""}/><span>${escapeHtml(channel)}</span></label>`; }).join("");
+    publishingEditor.querySelectorAll("[data-publish-channel]").forEach((input) => input.addEventListener("change", () => { if (input.checked) draftTargets.push({ channel: input.dataset.publishChannel, status: "Draft" }); else draftTargets = draftTargets.filter((item) => item.channel !== input.dataset.publishChannel); drawPublishing(); applyRecommendation(); }));
   }
-  drawChecklist(); drawAttachments(); drawPublishing();
-  const templateSelector = overlay.querySelector(isContent ? "#contentFormat" : "#activityType");
-  templateSelector.addEventListener("change", () => { const template = isContent ? state.contentTemplates[templateSelector.value] : state.activityTemplates[templateSelector.value]; if (template && (!draftItems.length || !editing || window.confirm("Replace the current checklist with this template?"))) { draftItems = template.map((label) => ({ id: uid(), label, done: false })); drawChecklist(); } if (isContent) overlay.querySelector("#activityType").value = templateSelector.value; });
+  function updateRelevantFields() {
+    if (isContent) return;
+    const type = overlay.querySelector("#activityType").value;
+    const showContact = ["Call", "Meeting", "Outreach", "Follow-up"].includes(type);
+    const showMeeting = type === "Meeting";
+    const showLocation = ["Meeting", "Visit", "Event"].includes(type);
+    overlay.querySelector('[data-context="contact"]').classList.toggle("hidden", !showContact);
+    overlay.querySelector('[data-context="meeting"]').classList.toggle("hidden", !showMeeting);
+    overlay.querySelector('[data-context="location"]').classList.toggle("hidden", !showLocation);
+    overlay.querySelector("#relevantFields").classList.toggle("hidden", !showContact && !showMeeting && !showLocation);
+  }
+
+  drawChecklist(); drawPublishing(); updateRelevantFields();
   overlay.querySelector("#addChecklistItem").addEventListener("click", () => { draftItems.push({ id: uid(), label: "", done: false }); drawChecklist(); checklistEditor.querySelector(`[data-check-input="${draftItems.length - 1}"]`)?.focus(); });
-  recurrenceSelect.addEventListener("change", () => { overlay.querySelector("#weekdayPicker").classList.toggle("hidden", recurrenceSelect.value !== "weekdays"); });
-  overlay.querySelector("#attachmentInput").addEventListener("change", async (event) => {
-    const error = overlay.querySelector("#attachmentError"); error.classList.add("hidden");
-    for (const file of event.target.files) {
-      if (file.size > 1_500_000) { error.textContent = `${file.name} is larger than 1.5 MB.`; error.classList.remove("hidden"); continue; }
-      if (draftAttachments.reduce((sum, item) => sum + item.size, 0) + file.size > 3_000_000) { error.textContent = "Attachments for one activity are limited to 3 MB in total."; error.classList.remove("hidden"); continue; }
-      draftAttachments.push(await readFile(file));
-    }
-    event.target.value = ""; drawAttachments();
-  });
+  recurrenceSelect.addEventListener("change", () => overlay.querySelector("#weekdayPicker").classList.toggle("hidden", recurrenceSelect.value !== "weekdays"));
+  if (isContent) {
+    overlay.querySelector("#activityCategory").addEventListener("change", applyRecommendation);
+    overlay.querySelector("#contentFormat").addEventListener("change", (event) => { formatManuallyChanged = true; selectedFormat = event.target.value; overlay.querySelector("#formatRecommendation").textContent = "Manual override"; loadTemplate(selectedFormat, true); });
+    applyRecommendation();
+  } else overlay.querySelector("#activityType").addEventListener("change", (event) => { updateRelevantFields(); loadTemplate(event.target.value, true); });
+
   overlay.querySelector("#activityForm").addEventListener("submit", (event) => {
     event.preventDefault();
     const vertical = getVertical(); const owner = getOwner();
     if (!vertical || !owner) return;
+    if (isContent && !draftTargets.length) return window.alert("Choose at least one publishing channel.");
+    const topic = isContent ? overlay.querySelector("#activityTopic").value.trim() : activity?.topic || "";
+    const type = isContent ? selectedFormat : overlay.querySelector("#activityType").value;
     const payload = {
-      title: overlay.querySelector("#activityTitle").value.trim(), vertical, owner, kind: formMode,
-      date: overlay.querySelector("#activityDate").value, priority: overlay.querySelector("#activityPriority").value,
-      platform: overlay.querySelector("#activityPlatform").value.trim(), activityType: overlay.querySelector("#activityType").value.trim(),
-      contentFormat: overlay.querySelector("#contentFormat").value, contentStatus: overlay.querySelector("#contentStatus").value,
-      category: overlay.querySelector("#activityCategory").value.trim(), blogType: overlay.querySelector("#blogType").value, topic: overlay.querySelector("#activityTopic").value.trim(),
-      additionalDetails: overlay.querySelector("#additionalDetails").value.trim(), notes: overlay.querySelector("#activityNotes").value.trim(),
-      outcome: overlay.querySelector("#activityOutcome").value.trim(), resources: overlay.querySelector("#activityResources").value.trim(),
-      followUpDate: overlay.querySelector("#followUpDate").value, fixed: overlay.querySelector("#fixedDate").checked,
-      attachments: draftAttachments, publicationTargets: isContent ? draftTargets : [], items: draftItems.filter((item) => item.label.trim()).map((item) => ({ ...item, label: item.label.trim() })),
+      title: isContent ? topic : overlay.querySelector("#activityTitle").value.trim(), vertical, owner, kind: formMode,
+      date: overlay.querySelector("#activityDate").value, time: overlay.querySelector("#activityTime")?.value || "", priority: overlay.querySelector("#activityPriority").value,
+      activityType: type, contentFormat: isContent ? selectedFormat : "", contentStatus: isContent ? activity?.contentStatus || "Draft" : "Draft",
+      category: isContent ? overlay.querySelector("#activityCategory").value : activity?.category || "", topic,
+      additionalDetails: isContent ? activity?.additionalDetails || "" : overlay.querySelector("#additionalDetails").value.trim(),
+      contactDetails: overlay.querySelector("#contactDetails")?.value.trim() || "", meetingLink: overlay.querySelector("#meetingLink")?.value.trim() || "", location: overlay.querySelector("#activityLocation")?.value.trim() || "",
+      platform: isContent ? activity?.platform || "" : overlay.querySelector("#contactDetails")?.value.trim() || overlay.querySelector("#activityLocation")?.value.trim() || "",
+      publicationTargets: isContent ? draftTargets.map((target) => ({ channel: target.channel, status: target.status || "Draft" })) : [],
+      items: draftItems.filter((item) => item.label.trim()).map((item) => ({ ...item, label: item.label.trim() })),
     };
     const recurrence = { frequency: recurrenceSelect.value, until: overlay.querySelector("#recurrenceUntil").value, weekdays: [...overlay.querySelectorAll("#weekdayPicker input:checked")].map((input) => Number(input.value)) };
     const saved = editing ? updateActivity(id, payload, { recurrence, scope: overlay.querySelector("#editScope")?.value || "occurrence" }) : addActivity(payload, recurrence);

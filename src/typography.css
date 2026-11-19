@@ -278,3 +278,16 @@ strong {
 @media (max-width: 860px) {
   .activity-table-row > span::before { font-size: var(--type-caption); line-height: 1.35; }
 }
+
+/* WAVE 1.2 workflow typography */
+.minimal-login-brand > span,
+.workflow-track span,
+.content-workflow > p,
+.content-preview-card span,
+.review-note p,
+.objective-list > span { font-size: var(--type-caption); line-height: 1.45; }
+.content-preview-card strong,
+.review-note strong,
+.channel-picker .publish-channel span { font-size: var(--type-label); line-height: 1.45; }
+.template-settings-section > .section-title h3 { font-size: var(--type-subheading); }
+.template-settings-section > .section-title span { font-size: var(--type-caption); }

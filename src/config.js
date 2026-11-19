@@ -8,8 +8,9 @@ export const SESSION_KEY = "webster.wave.session.v1";
 export const UI_KEY = "webster.wave.ui.v1";
 export const MARKETING_CHANNELS = ["Instagram", "Facebook", "Twitter / X", "LinkedIn", "Blogs", "YouTube"];
 export const BLOG_TYPES = ["Life at Webster", "General Blog"];
-export const CONTENT_LIFECYCLE = ["Planned", "Draft", "In Review", "Approved", "Scheduled", "Published"];
+export const CONTENT_LIFECYCLE = ["Draft", "In Production", "Ready for Review", "Approved", "Scheduled", "Published"];
 export const PUBLISHING_STATUSES = CONTENT_LIFECYCLE;
+export const CONTENT_OBJECTIVES = ["Brand Awareness", "Engagement", "Lead Generation", "Education", "Brand Authority", "Service Promotion", "Employer Branding", "Social Proof", "Community Building"];
 export const CONTENT_FORMATS = ["Social post", "Carousel", "Creative", "Reel", "Short", "Blog", "Video"];
 export const CONTENT_TEMPLATES = {
   "Social post": ["Define the message", "Draft the copy", "Prepare the creative", "Review and approve", "Schedule publishing"],

@@ -5,20 +5,25 @@ test("login, modules, multi-channel planning and mobile containment", async ({ p
   expect(html).toContain('class="brand-loader"');
   expect((await page.request.get("/favicon.svg")).ok()).toBeTruthy();
   expect((await page.request.get("/brand/wave-momentum-mark.svg")).ok()).toBeTruthy();
+  expect((await page.request.get("/brand/wave-momentum-mark-light.svg")).ok()).toBeTruthy();
+  expect(await (await page.request.get("/favicon.svg")).text()).not.toContain('<rect width="128"');
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
-  await expect(page.locator(".login-brand .wave-lockup")).toHaveAttribute("aria-label", "wave");
+  await expect(page.locator(".minimal-login .wave-lockup")).toHaveAttribute("aria-label", "wave");
+  await expect(page.locator(".login-brand-panel, .login-promise, .login-proof")).toHaveCount(0);
+  await expect(page.locator("#loginName")).toBeVisible();
+  await expect(page.locator("#loginEmail")).toBeVisible();
   await expect(page.locator(".brand-mark")).toHaveCount(0);
   await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", "/favicon.svg");
   await page.screenshot({ path: "test-results/wave-login.png", fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator(".login-mobile-brand img")).toBeVisible();
+  await expect(page.locator(".minimal-login-brand img")).toBeVisible();
   await page.screenshot({ path: "test-results/wave-login-mobile.png", fullPage: true });
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.locator("#loginName").fill("Vishal Dudhal");
-  await page.getByRole("button", { name: /Continue to wave/i }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
   await expect(page.locator(".sidebar-brand .momentum-mark")).toBeVisible();
+  await expect(page.locator(".sidebar-brand .momentum-mark")).toHaveAttribute("src", "/brand/wave-momentum-mark-light.svg");
   await expect(page.locator(".sidebar-brand .brand-copy strong")).toHaveText("wave");
   await expect(page.locator("#viewRoot").getByRole("button", { name: /Add activity/i })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Open planner", exact: true })).toHaveCount(0);
@@ -58,7 +63,9 @@ test("login, modules, multi-channel planning and mobile containment", async ({ p
   await page.getByRole("button", { name: /New activity/ }).click();
   await page.getByRole("button", { name: /Plan Content/ }).click();
   await page.screenshot({ path: "test-results/wave-content-form.png", fullPage: true });
-  await page.locator("#activityTitle").fill("Multi-channel launch proof");
+  await expect(page.locator("#activityTopic")).toBeVisible();
+  await expect(page.locator("#activityCategory")).toContainText("Brand Awareness");
+  await page.locator("#activityTopic").fill("Multi-channel launch proof");
   await page.locator('[data-publish-channel="LinkedIn"]').check();
   await page.locator('[data-publish-channel="YouTube"]').check();
   await page.locator("#overlay").getByRole("button", { name: "Plan content", exact: true }).click();
@@ -71,24 +78,41 @@ test("login, modules, multi-channel planning and mobile containment", async ({ p
   const created = data.activities.filter((activity) => activity.title === "Multi-channel launch proof");
   expect(created).toHaveLength(1);
   expect(created[0].kind).toBe("content");
-  expect(created[0].contentStatus).toBe("Planned");
-  expect(created[0].contentFormat).toBe("Social post");
+  expect(created[0].contentStatus).toBe("Draft");
+  expect(created[0].contentFormat).toBe("Video");
   expect(created[0].publicationTargets.map((target) => target.channel).sort()).toEqual(["LinkedIn", "YouTube"]);
-  expect(created[0].publicationTargets.every((target) => target.status === "Planned")).toBeTruthy();
-  await page.locator('.week-card:has([data-inline-title][value="Multi-channel launch proof"]):has([data-channel="LinkedIn"]) select').selectOption("Published");
+  expect(created[0].publicationTargets.every((target) => target.status === "Draft")).toBeTruthy();
+  const linkedInStatus = page.locator('.week-card:has([data-inline-title][value="Multi-channel launch proof"]):has([data-channel="LinkedIn"]) select');
+  page.once("dialog", (dialog) => dialog.accept());
+  await linkedInStatus.selectOption("Published");
+  const blocked = await page.evaluate(() => JSON.parse(localStorage.getItem("growth30.planner.v1")).activities.find((activity) => activity.title === "Multi-channel launch proof"));
+  expect(blocked.publicationTargets.find((target) => target.channel === "LinkedIn").status).toBe("Draft");
+
+  await page.locator('.week-card:has([data-inline-title][value="Multi-channel launch proof"]):has([data-channel="LinkedIn"]) [data-weekly-open]').click();
+  await page.getByRole("button", { name: "Start production" }).click();
+  await page.getByRole("button", { name: "Submit for review" }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await page.locator("#notificationButton").click();
+  await expect(page.locator("#notificationsPopover").getByText("Content is ready for your review", { exact: true })).toBeVisible();
+  await page.locator('#notificationsPopover [data-notification]').filter({ hasText: "Multi-channel launch proof" }).click();
+  await expect(page.getByRole("button", { name: "Preview & review" })).toBeVisible();
+  await page.getByRole("button", { name: "Preview & review" }).click();
+  await expect(page.getByRole("heading", { name: "Multi-channel launch proof" })).toBeVisible();
+  await page.getByRole("button", { name: "Approve content" }).click();
+  await expect(page.locator(".drawer-badges .status-pill")).toHaveText("Approved");
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await linkedInStatus.selectOption("Published");
   const published = await page.evaluate(() => JSON.parse(localStorage.getItem("growth30.planner.v1")).activities.find((activity) => activity.title === "Multi-channel launch proof"));
   expect(published.publicationTargets.find((target) => target.channel === "LinkedIn").status).toBe("Published");
   await page.screenshot({ path: "test-results/wave-planner.png", fullPage: true });
 
-  await page.getByRole("button", { name: "All Activities" }).click();
-  await page.locator("#activitySearch").fill("launch proof");
-  await expect(page.getByText("Multi-channel launch proof", { exact: true })).toBeVisible();
+  await expect(page.locator(".view-switch button")).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "All Activities" })).toHaveCount(0);
 
   await page.reload();
   await expect(page.getByRole("heading", { name: "Planner", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "All Activities" })).toHaveClass(/active/);
-  await expect(page.locator("#activitySearch")).toHaveValue("launch proof");
-  await expect(page.getByText("Multi-channel launch proof", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Weekly Planner" })).toHaveClass(/active/);
+  await expect(page.getByRole("button", { name: "All Activities" })).toHaveCount(0);
   const dismissBriefing = page.getByRole("button", { name: "Dismiss", exact: true });
   if (await dismissBriefing.isVisible()) await dismissBriefing.click();
 
@@ -123,7 +147,7 @@ test("version 3 plans migrate without losing activities", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("Legacy activity", { exact: true }).first()).toBeVisible();
   const migrated = await page.evaluate(() => JSON.parse(localStorage.getItem("growth30.planner.v1")));
-  expect(migrated.schemaVersion).toBe(5);
+  expect(migrated.schemaVersion).toBe(6);
   expect(migrated.activities[0].publicationTargets).toEqual([{ channel: "LinkedIn", status: "Scheduled" }]);
 });
 
@@ -161,8 +185,14 @@ test("contextual activity flow and categorized settings remain integration-ready
   await expect(page.getByRole("heading", { name: "Plan an Activity" })).toBeVisible();
   await expect(page.locator("#publishingSection")).toBeHidden();
   await expect(page.locator(".additional-details")).not.toHaveAttribute("open", "");
+  await expect(page.locator("#activityTime")).toBeVisible();
+  await expect(page.getByLabel("Notes")).toHaveCount(0);
+  await expect(page.getByLabel("Outcome")).toHaveCount(0);
   await page.screenshot({ path: "test-results/wave-activity-form.png", fullPage: true });
   await page.locator("#activityType").selectOption("Follow-up");
+  await expect(page.locator('[data-context="contact"]')).toBeVisible();
+  await expect(page.locator('[data-context="meeting"]')).toBeHidden();
+  await expect(page.locator('[data-context="location"]')).toBeHidden();
   await expect(page.locator("#checklistEditor .check-edit")).toHaveCount(5);
   await page.locator("#activityTitle").fill("Follow up after discovery call");
   await page.locator("#overlay").getByRole("button", { name: "Plan activity", exact: true }).click();
@@ -172,6 +202,12 @@ test("contextual activity flow and categorized settings remain integration-ready
 
   await page.getByRole("button", { name: "Settings" }).click();
   await expect(page.locator(".settings-nav button")).toHaveCount(7);
+  await page.getByRole("button", { name: "Verticals & Templates" }).click();
+  await page.getByRole("button", { name: "Content Templates" }).click();
+  await expect(page.getByRole("button", { name: "Remove Brand Awareness" })).toBeVisible();
+  await page.locator("#newObjective").fill("Customer Advocacy");
+  await page.getByRole("button", { name: "Add objective" }).click();
+  await expect(page.getByRole("button", { name: "Remove Customer Advocacy" })).toBeVisible();
   await page.getByRole("button", { name: "Integrations" }).click();
   await expect(page.locator(".integration-card")).toHaveCount(6);
   await expect(page.getByText("No connection is active.")).toBeVisible();
@@ -197,6 +233,42 @@ test("contextual activity flow and categorized settings remain integration-ready
   expect(readability.integrationCopyLineHeight).toBeGreaterThanOrEqual(readability.integrationCopy * 1.4);
   expect(readability.sidebarProfile).toBeGreaterThanOrEqual(12);
   await page.screenshot({ path: "test-results/wave-settings-integrations.png", fullPage: true });
+});
+
+test("recurring content repeats the schedule with blank topics and supports change requests", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("webster.wave.session.v1", "active"));
+  await page.goto("/");
+  const dismissBriefing = page.getByRole("button", { name: "Dismiss", exact: true });
+  if (await dismissBriefing.isVisible()) await dismissBriefing.click();
+
+  await page.getByRole("button", { name: /New activity/ }).click();
+  await page.getByRole("button", { name: /Plan Content/ }).click();
+  await page.locator("#activityTopic").fill("Founder insight series");
+  await page.locator("#activityCategory").selectOption("Brand Authority");
+  await page.locator('[data-publish-channel="LinkedIn"]').check();
+  await page.locator("#recurrenceFrequency").selectOption("weekly");
+  await page.getByRole("button", { name: "Plan content", exact: true }).click();
+
+  const recurrence = await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem("growth30.planner.v1"));
+    const first = data.activities.find((item) => item.title === "Founder insight series");
+    return { first, future: data.activities.filter((item) => item.recurrenceId === first.recurrenceId && item.id !== first.id) };
+  });
+  expect(recurrence.first.contentStatus).toBe("Draft");
+  expect(recurrence.future.length).toBeGreaterThan(0);
+  expect(recurrence.future.every((item) => item.title === "Untitled content" && item.topic === "")).toBeTruthy();
+  expect(recurrence.future.every((item) => item.contentStatus === "Draft" && item.items.every((step) => !step.done))).toBeTruthy();
+
+  await page.getByRole("button", { name: "Planner" }).click();
+  await page.locator('.week-card:has([data-inline-title][value="Founder insight series"]) [data-weekly-open]').click();
+  await page.getByRole("button", { name: "Start production" }).click();
+  await page.getByRole("button", { name: "Submit for review" }).click();
+  await page.getByRole("button", { name: "Preview & review" }).click();
+  await page.locator("#reviewFeedback").fill("Strengthen the opening and add a concrete example.");
+  await page.getByRole("button", { name: "Request changes" }).click();
+  const revised = await page.evaluate(() => JSON.parse(localStorage.getItem("growth30.planner.v1")).activities.find((item) => item.title === "Founder insight series"));
+  expect(revised.contentStatus).toBe("In Production");
+  expect(revised.reviewNotes).toContain("concrete example");
 });
 
 test("typography remains readable and contained at 100% zoom", async ({ page }) => {

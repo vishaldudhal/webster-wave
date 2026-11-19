@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 96" role="img" aria-labelledby="title desc">
+  <title id="title">wave Momentum mark</title>
+  <desc id="desc">Three ascending shapes representing progress and forward movement.</desc>
+  <g fill="#f4f5ef">
+    <rect x="15" y="48" width="23" height="38" rx="8" transform="rotate(27 26.5 67)"/>
+    <rect x="51" y="27" width="27" height="59" rx="9" transform="rotate(27 64.5 56.5)"/>
+    <rect x="90" y="5" width="27" height="63" rx="9" transform="rotate(27 103.5 36.5)"/>
+  </g>
+  <path d="M72 29.5 77.5 32.3 54.4 78l-5.5-2.8z" fill="#9db8a4" opacity=".88"/>
+</svg>
