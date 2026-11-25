@@ -59,8 +59,7 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character
 const priorityClass = (priority) => String(priority || "Medium").toLowerCase();
 const statusClass = (activity) => statusOf(activity).toLowerCase().replace(" ", "-");
 const isCarried = (activity) => activity.history.some((entry) => entry.type === "carried" || entry.from);
-const momentumMark = (className = "momentum-mark", light = false) => `<img class="${className}" src="/brand/${light ? "wave-momentum-mark-light" : "wave-momentum-mark"}.svg" alt=""/>`;
-const momentumLockup = () => `<span class="wave-lockup" role="img" aria-label="wave">${momentumMark()}<strong>wave</strong></span>`;
+const brandAsset = (type = "mark", className = "momentum-mark", light = false) => `<img class="${className}" src="/brand/wave-momentum-${type}${light ? "-light" : ""}.svg" alt="${type === "lockup" ? "wave by Webster" : ""}"/>`;
 const ICON_PATHS = {
   overview: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
   planner: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
@@ -113,7 +112,7 @@ function render() {
   const moduleTitles = { overview: ["Overview", `${weekDay(today())}, ${niceDate(today(), { year: "numeric" })} · Live execution snapshot`], planner: ["Planner", "Plan, manage and track every activity in one connected workspace."], settings: ["Settings", "Configure your workspace, team and planning rules."] };
   const [title, description] = moduleTitles[activeModule];
   app.innerHTML = `<div class="saas-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}">
-    <aside class="sidebar" id="sidebar"><div class="sidebar-brand">${momentumMark("momentum-mark", true)}<div class="brand-copy"><strong>wave</strong><span>by Webster</span></div></div>
+    <aside class="sidebar" id="sidebar"><div class="sidebar-brand">${brandAsset("lockup", "brand-lockup-image", true)}${brandAsset("mark", "momentum-mark", true)}</div>
       <nav class="side-nav" aria-label="Primary navigation">${[["overview","Overview"],["planner","Planner"],["settings","Settings"]].map(([key,label]) => `<button class="${activeModule === key ? "active" : ""}" data-module="${key}" data-tooltip="${label}" aria-label="${label}">${icon(key, "nav-icon")}<span>${label}</span></button>`).join("")}</nav>
       <div class="sidebar-foot"><div class="sidebar-profile"><span>${state.profile.avatar ? `<img src="${escapeHtml(state.profile.avatar)}" alt=""/>` : escapeHtml(initials(state.profile.name))}</span><div><strong>${escapeHtml(state.profile.name)}</strong><small>${escapeHtml(state.profile.role)}</small></div></div><button class="sidebar-toggle" id="sidebarToggle" data-tooltip="${sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}" aria-label="${sidebarCollapsed ? "Expand" : "Collapse"} sidebar">${icon(sidebarCollapsed ? "expand" : "collapse")}</button></div>
     </aside>
@@ -157,7 +156,7 @@ function notificationItems() {
 }
 
 function renderLogin() {
-  app.innerHTML = `<section class="minimal-login"><form class="login-card" id="loginForm" aria-label="Sign in to wave"><div class="minimal-login-brand">${momentumLockup()}<span>by Webster</span></div><label class="field">Name<input id="loginName" required autocomplete="name" value="${escapeHtml(state.profile.name)}" placeholder="Your name"/></label><label class="field">Work email<input id="loginEmail" type="email" autocomplete="email" value="${escapeHtml(state.profile.email)}" placeholder="you@company.com"/></label><button class="button primary login-submit">Continue</button></form></section>`;
+  app.innerHTML = `<section class="minimal-login"><form class="login-card" id="loginForm" aria-label="Sign in to wave"><div class="minimal-login-brand">${brandAsset("lockup", "approved-brand-lockup")}</div><label class="field">Name<input id="loginName" required autocomplete="name" value="${escapeHtml(state.profile.name)}" placeholder="Your name"/></label><label class="field">Work email<input id="loginEmail" type="email" autocomplete="email" value="${escapeHtml(state.profile.email)}" placeholder="you@company.com"/></label><button class="button primary login-submit">Continue</button></form></section>`;
   document.querySelector("#loginForm").addEventListener("submit", (event) => { event.preventDefault(); state.profile.name = document.querySelector("#loginName").value.trim() || DEFAULT_OWNER; state.profile.email = document.querySelector("#loginEmail").value.trim(); if (!state.team.includes(state.profile.name)) state.team.push(state.profile.name); save(); localStorage.setItem(SESSION_KEY, "active"); render(); });
 }
 

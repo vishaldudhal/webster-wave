@@ -6,9 +6,12 @@ test("login, modules, multi-channel planning and mobile containment", async ({ p
   expect((await page.request.get("/favicon.svg")).ok()).toBeTruthy();
   expect((await page.request.get("/brand/wave-momentum-mark.svg")).ok()).toBeTruthy();
   expect((await page.request.get("/brand/wave-momentum-mark-light.svg")).ok()).toBeTruthy();
+  expect((await page.request.get("/brand/wave-momentum-lockup.svg")).ok()).toBeTruthy();
+  expect((await page.request.get("/brand/wave-momentum-lockup-light.svg")).ok()).toBeTruthy();
   expect(await (await page.request.get("/favicon.svg")).text()).not.toContain('<rect width="128"');
   await page.goto("/");
-  await expect(page.locator(".minimal-login .wave-lockup")).toHaveAttribute("aria-label", "wave");
+  await expect(page.locator(".minimal-login .approved-brand-lockup")).toHaveAttribute("src", "/brand/wave-momentum-lockup.svg");
+  await expect(page.locator(".minimal-login .approved-brand-lockup")).toHaveAttribute("alt", "wave by Webster");
   await expect(page.locator(".login-brand-panel, .login-promise, .login-proof")).toHaveCount(0);
   await expect(page.locator("#loginName")).toBeVisible();
   await expect(page.locator("#loginEmail")).toBeVisible();
@@ -22,9 +25,9 @@ test("login, modules, multi-channel planning and mobile containment", async ({ p
   await page.locator("#loginName").fill("Vishal Dudhal");
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
-  await expect(page.locator(".sidebar-brand .momentum-mark")).toBeVisible();
-  await expect(page.locator(".sidebar-brand .momentum-mark")).toHaveAttribute("src", "/brand/wave-momentum-mark-light.svg");
-  await expect(page.locator(".sidebar-brand .brand-copy strong")).toHaveText("wave");
+  await expect(page.locator(".sidebar-brand .brand-lockup-image")).toBeVisible();
+  await expect(page.locator(".sidebar-brand .brand-lockup-image")).toHaveAttribute("src", "/brand/wave-momentum-lockup-light.svg");
+  await expect(page.locator(".sidebar-brand .momentum-mark")).toBeHidden();
   await expect(page.locator("#viewRoot").getByRole("button", { name: /Add activity/i })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Open planner", exact: true })).toHaveCount(0);
   await expect(page.locator(".app-main > .footer")).toHaveCount(0);
@@ -54,6 +57,8 @@ test("login, modules, multi-channel planning and mobile containment", async ({ p
   await page.locator("#sidebarToggle").click();
   await expect(page.locator(".saas-shell")).toHaveClass(/sidebar-collapsed/);
   await expect(page.locator(".sidebar-brand .momentum-mark")).toBeVisible();
+  await expect(page.locator(".sidebar-brand .momentum-mark")).toHaveAttribute("src", "/brand/wave-momentum-mark-light.svg");
+  await expect(page.locator(".sidebar-brand .brand-lockup-image")).toBeHidden();
   await expect(page.locator('[data-module="planner"]')).toHaveAttribute("data-tooltip", "Planner");
   await page.waitForTimeout(250);
   await page.screenshot({ path: "test-results/wave-sidebar-collapsed.png", fullPage: true });

@@ -11,7 +11,7 @@ A premium, connected business development and marketing command centre for plann
 
 - Visual-first Overview with a consolidated live daily snapshot, interactive focus list, weekly momentum, outcome metrics, upcoming work, and vertical balance
 - Branded local workspace login, intentionally designed collapsible navigation, notifications, and profile controls
-- Independent Momentum brand identity with a lowercase wave wordmark and three-shape progress mark
+- Approved custom lowercase wave identity with its integrated sage wave symbol and subtle by Webster endorsement
 - Focused Overview, Planner, and Settings navigation backed by one shared data model
 - Planner-based activity search, filtering, management, and historical access without a duplicate Activities module
 - Separate minimal **Plan an Activity** and **Plan Content** creation workflows

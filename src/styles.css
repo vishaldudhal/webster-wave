@@ -382,19 +382,24 @@ body { background: #f5f6f2; }
 
 /* WAVE 1.2 focused planning and approval */
 .sidebar .momentum-mark,
-.sidebar-collapsed .sidebar-brand .momentum-mark { width: 45px; height: 40px; border-radius: 0; background: transparent; padding: 0; }
-.sidebar-collapsed .sidebar-brand .momentum-mark { width: 48px; height: 43px; }
-.brand-copy span { opacity: .78; }
+.sidebar-collapsed .sidebar-brand .momentum-mark { width: 55px; height: auto; border-radius: 0; background: transparent; padding: 0; }
+.sidebar .momentum-mark { display: none; }
+.sidebar .brand-lockup-image { display: block; width: min(100%,210px); height: auto; }
+.sidebar-collapsed .sidebar-brand .brand-lockup-image { display: none; }
+.sidebar-collapsed .sidebar-brand .momentum-mark { display: block; }
 
 .minimal-login { display: grid; min-height: 100vh; place-items: center; background: radial-gradient(circle at 50% 18%,#edf3eb 0,transparent 34%),#f7f7f2; padding: 28px; }
 .minimal-login .login-card { width: min(100%,410px); border: 1px solid var(--line); border-radius: 18px; background: rgba(255,255,255,.92); padding: 34px; box-shadow: 0 20px 60px rgba(25,55,37,.09); }
-.minimal-login-brand { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 32px; }
-.minimal-login-brand .wave-lockup { gap: 9px; }
-.minimal-login-brand .momentum-mark { width: 70px; height: 52px; }
-.minimal-login-brand .wave-lockup strong { font-size: 29px; }
-.minimal-login-brand > span { align-self: flex-end; color: #74857a; margin-bottom: 8px; font-size: 10px; font-weight: 500; letter-spacing: .025em; }
+.minimal-login-brand { display: flex; align-items: center; justify-content: center; margin-bottom: 32px; }
+.minimal-login-brand .approved-brand-lockup { display: block; width: min(100%,310px); height: auto; }
 .minimal-login .field { margin-bottom: 16px; }
 .minimal-login .login-submit { min-height: 46px; margin-top: 4px; }
+
+@media (max-width: 860px) {
+  .sidebar-collapsed .sidebar-brand { justify-content: flex-start; }
+  .sidebar-collapsed .sidebar-brand .brand-lockup-image { display: block; }
+  .sidebar-collapsed .sidebar-brand .momentum-mark { display: none; }
+}
 
 .simplified-form { gap: 15px; }
 .relevant-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 13px; border: 1px solid #dce6dd; border-radius: 11px; background: #f7faf7; padding: 14px; }
